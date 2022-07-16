@@ -1,9 +1,9 @@
 name: Publish to npm.pkg.github.com
 
 on:
-  release:
-    types:
-      - created
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build-and-publish:
