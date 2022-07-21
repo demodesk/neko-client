@@ -44,6 +44,7 @@
   import GuacamoleKeyboard from './utils/guacamole-keyboard'
   import { KeyTable, keySymsRemap } from './utils/keyboard-remapping'
   import { getFilesFromDataTansfer } from './utils/file-upload'
+  import { NekoControl } from './internal/control'
   import { NekoWebRTC } from './internal/webrtc'
   import { Session, Scroll } from './types/state'
   import { CursorPosition, CursorImage } from './types/webrtc'
@@ -66,6 +67,9 @@
 
     private keyboard = GuacamoleKeyboard()
     private focused = false
+
+    @Prop()
+    private readonly control!: NekoControl
 
     @Prop()
     private readonly sessions!: Record<string, Session>
@@ -226,7 +230,7 @@
     }
 
     onInput(e: InputEvent) {
-      this.$emit('clipboard', this._textarea.value)
+      this.control.paste(this._textarea.value)
       this._textarea.value = ''
     }
 
@@ -555,7 +559,7 @@
     implicitControlRequest(e: MouseEvent) {
       if (this.implicitControl && e.type === 'mousedown' && this.reqMouseDown == null) {
         this.reqMouseDown = e
-        this.$emit('implicitControlRequest')
+        this.control.request()
       }
 
       if (this.implicitControl && e.type === 'mouseup' && this.reqMouseUp == null) {
@@ -566,7 +570,7 @@
     // unused
     implicitControlRelease() {
       if (this.implicitControl) {
-        this.$emit('implicitControlRelease')
+        this.control.release()
       }
     }
   }
