@@ -145,7 +145,12 @@
         const isCtrlKey = key == KeyTable.XK_Control_L || key == KeyTable.XK_Control_R
         if (isCtrlKey) ctrlKey = key
 
-        this.webrtc.send('keydown', { key })
+        if (this.webrtc.connected) {
+          this.webrtc.send('keydown', { key })
+        } else {
+          this.control.keyDown(key)
+        }
+
         return isCtrlKey
       }
       this.keyboard.onkeyup = (key: number) => {
@@ -159,7 +164,11 @@
         const isCtrlKey = key == KeyTable.XK_Control_L || key == KeyTable.XK_Control_R
         if (isCtrlKey) ctrlKey = 0
 
-        this.webrtc.send('keyup', { key })
+        if (this.webrtc.connected) {
+          this.webrtc.send('keyup', { key })
+        } else {
+          this.control.keyUp(key)
+        }
       }
       this.keyboard.listenTo(this._textarea)
 
@@ -239,8 +248,6 @@
         return
       }
 
-      this.sendMousePos(e)
-
       const now = Date.now()
       const firstScroll = now - this.wheelDate > 250
 
@@ -287,8 +294,14 @@
         }
       }
 
-      if (x != 0 || y != 0) {
+      // skip if not scrolled
+      if (x == 0 && y == 0) return
+
+      if (this.webrtc.connected) {
+        this.sendMousePos(e)
         this.webrtc.send('wheel', { x, y })
+      } else {
+        this.control.scroll(x, y)
       }
     }
 
@@ -308,8 +321,14 @@
         return
       }
 
-      this.sendMousePos(e)
-      this.webrtc.send('mousedown', { key: e.button + 1 })
+      const key = e.button + 1
+      if (this.webrtc.connected) {
+        this.sendMousePos(e)
+        this.webrtc.send('mousedown', { key })
+      } else {
+        const { x, y } = this.getMousePos(e.clientX, e.clientY)
+        this.control.buttonDown(key, x, y)
+      }
     }
 
     onMouseUp(e: MouseEvent) {
@@ -318,8 +337,14 @@
         return
       }
 
-      this.sendMousePos(e)
-      this.webrtc.send('mouseup', { key: e.button + 1 })
+      const key = e.button + 1
+      if (this.webrtc.connected) {
+        this.sendMousePos(e)
+        this.webrtc.send('mouseup', { key })
+      } else {
+        const { x, y } = this.getMousePos(e.clientX, e.clientY)
+        this.control.buttonUp(key, x, y)
+      }
     }
 
     onMouseEnter(e: MouseEvent) {
