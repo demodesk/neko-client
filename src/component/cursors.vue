@@ -106,7 +106,7 @@
       this.canvasDrawPoints(this._percent)
     }
 
-    canvasDrawPoints(percent: number) {
+    canvasDrawPoints(percent: number = 1) {
       // clear & scale canvas
       this.canvasClear()
       this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
@@ -186,7 +186,7 @@
       // if all cursors are unchanged
       if (unchanged == this.cursors.length) {
         // draw only last known position without animation
-        this.canvasDrawPoints(1)
+        this.canvasDrawPoints()
         return
       }
 
