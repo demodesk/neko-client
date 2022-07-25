@@ -157,7 +157,7 @@
             // we knew that this cursor did not change, but other
             // might, so we keep only one point to be drawn
             pos.cursors = [new_last_point]
-            // and increate unchanged counter
+            // and increase unchanged counter
             unchanged++
           } else {
             // if cursor moved, we want to include last point
