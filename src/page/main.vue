@@ -529,8 +529,8 @@
 
           // draw cursor tag
           if (cursorTag) {
-            let x = 20 // box margin x
-            let y = 20 // box margin y
+            const x = 20 // box margin x
+            const y = 20 // box margin y
 
             ctx.globalAlpha = 0.5
             ctx.font = '10px Arial, sans-serif'
@@ -589,8 +589,8 @@
             const boxPaddingX = 9
             const boxPaddingY = 6
 
-            let x = 22 // box margin x
-            let y = 28 // box margin y
+            const x = 22 // box margin x
+            const y = 28 // box margin y
 
             // prepare tag text
             ctx.font = '500 ' + fontSize + 'px Roboto, sans-serif'
