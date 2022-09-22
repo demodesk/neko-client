@@ -46,6 +46,7 @@
   import { Vue, Component, Ref, Prop, Watch } from 'vue-property-decorator'
 
   import GuacamoleKeyboard from './utils/guacamole-keyboard'
+  import NoVncKeyboard from './utils/novnc-keyboard'
   import { KeyTable, keySymsRemap } from './utils/keyboard-remapping'
   import { getFilesFromDataTansfer } from './utils/file-upload'
   import { NekoControl } from './internal/control'
@@ -132,6 +133,7 @@
       let noKeyUp = {} as Record<number, boolean>
 
       // Initialize Guacamole Keyboard
+      if (false) {
       this.keyboard.onkeydown = (key: number) => {
         key = keySymsRemap(key)
 
@@ -177,6 +179,26 @@
         }
       }
       this.keyboard.listenTo(this._textarea)
+      } else {
+        let kbd = NoVncKeyboard(this._textarea)
+        kbd.grab()
+        kbd.onkeyevent = (keysym: number, code: number, down: boolean) => {
+          console.log(keysym, code, down)
+          if (down) {
+            if (this.webrtc.connected) {
+              this.webrtc.send('keydown', { key: keysym })
+            } else {
+              this.wsControl.keyDown(keysym)
+            }
+          } else {
+            if (this.webrtc.connected) {
+              this.webrtc.send('keyup', { key: keysym })
+            } else {
+              this.wsControl.keyUp(keysym)
+            }
+          }
+        }
+      }
 
       this.webrtc.addListener('cursor-position', this.onCursorPosition)
       this.webrtc.addListener('cursor-image', this.onCursorImage)
