@@ -88,9 +88,6 @@ export default class Keyboard {
     }
 
     _handleKeyDown(e) {
-        // NOVNCEDIT Blacklist keys
-        if (this.blacklistKeys(e)) { return; }
-
         const code = this._getKeyCode(e);
         let keysym = KeyboardUtil.getKeysym(e);
 
@@ -201,9 +198,6 @@ export default class Keyboard {
 
     // Legacy event for browsers without code/key
     _handleKeyPress(e) {
-        // NOVNCEDIT Blacklist keys
-        if (this.blacklistKeys(e)) { return; }
-
         stopEvent(e);
 
         // Are we expecting a keypress?
@@ -266,9 +260,6 @@ export default class Keyboard {
     }
 
     _handleKeyUp(e) {
-        // NOVNCEDIT Blacklist keys
-        if (this.blacklistKeys(e)) { return; }
-
         stopEvent(e);
 
         const code = this._getKeyCode(e);
@@ -392,19 +383,5 @@ export default class Keyboard {
         this._allKeysUp();
 
         console.debug(">> Keyboard.ungrab");
-    }
-
-    // NOVNCEDIT Blacklist keys
-    blacklistKeys(e) {
-        var whitelist = "≤¡“¶¢[]|{}≠¿'«∑€®†Ωøπ•±å‚∂ƒ©ªº∆@œæ‘„¥≈ç√∫~µ∞…–≥¬”#£ﬁ^\\˜·¯˙˚»„‰¸˝ˇÁÛØ∏°ÅÍ™ÏÌÓıˆﬂŒÆ’“‡ÙÇ◊‹›˘˛÷—";
-        if (whitelist.indexOf(e.key) > -1) {
-            return false;
-        }
-
-        if (e.ctrlKey || e.altKey || e.metaKey) {
-           return true;
-        }
-
-        return false;
     }
 };
