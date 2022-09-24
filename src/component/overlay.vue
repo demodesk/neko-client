@@ -45,8 +45,7 @@
 <script lang="ts">
   import { Vue, Component, Ref, Prop, Watch } from 'vue-property-decorator'
 
-  import GuacamoleKeyboard from './utils/guacamole-keyboard'
-  import NoVncKeyboard from './utils/novnc-keyboard'
+  import { KeyboardInterface, GuacamoleKeyboard, NoVncKeyboard } from './utils/keyboard'
   import { KeyTable, keySymsRemap } from './utils/keyboard-remapping'
   import { getFilesFromDataTansfer } from './utils/file-upload'
   import { NekoControl } from './internal/control'
@@ -70,7 +69,7 @@
     @Ref('textarea') readonly _textarea!: HTMLTextAreaElement
     private _ctx!: CanvasRenderingContext2D
 
-    private keyboard = GuacamoleKeyboard()
+    private keyboard!: KeyboardInterface
     private focused = false
 
     @Prop()
@@ -132,8 +131,13 @@
       let ctrlKey = 0
       let noKeyUp = {} as Record<number, boolean>
 
-      // Initialize Guacamole Keyboard
-      if (false) {
+      // Initialize Keyboard
+      if ('NEKO_USE_GUACAMOLE' in window) {
+        this.keyboard = GuacamoleKeyboard()
+      } else {
+        this.keyboard = NoVncKeyboard()
+      }
+
       this.keyboard.onkeydown = (key: number) => {
         key = keySymsRemap(key)
 
@@ -179,26 +183,6 @@
         }
       }
       this.keyboard.listenTo(this._textarea)
-      } else {
-        let kbd = NoVncKeyboard(this._textarea)
-        kbd.grab()
-        kbd.onkeyevent = (keysym: number, code: number, down: boolean) => {
-          console.log(keysym, code, down)
-          if (down) {
-            if (this.webrtc.connected) {
-              this.webrtc.send('keydown', { key: keysym })
-            } else {
-              this.wsControl.keyDown(keysym)
-            }
-          } else {
-            if (this.webrtc.connected) {
-              this.webrtc.send('keyup', { key: keysym })
-            } else {
-              this.wsControl.keyUp(keysym)
-            }
-          }
-        }
-      }
 
       this.webrtc.addListener('cursor-position', this.onCursorPosition)
       this.webrtc.addListener('cursor-image', this.onCursorImage)
@@ -209,7 +193,9 @@
     beforeDestroy() {
       window.removeEventListener('mouseup', this.onMouseUp, true)
 
-      // Guacamole Keyboard does not provide destroy functions
+      if (this.keyboard) {
+        this.keyboard.removeListener()
+      }
 
       this.webrtc.removeListener('cursor-position', this.onCursorPosition)
       this.webrtc.removeListener('cursor-image', this.onCursorImage)

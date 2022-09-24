@@ -4,14 +4,18 @@
  * Licensed under MPL 2.0 or any later version (see LICENSE.txt)
  */
 
-import { stopEvent } from './util/events.js';
 import * as KeyboardUtil from "./util.js";
 import KeyTable from "./keysym.js";
-import * as browser from "./util/browser.js";
+import * as browser from "./browser.js";
 
 //
 // Keyboard event handler
 //
+
+function stopEvent(e) {
+  e.stopPropagation();
+  e.preventDefault();
+}
 
 export default class Keyboard {
     constructor(target) {
@@ -39,19 +43,20 @@ export default class Keyboard {
     // ===== PRIVATE METHODS =====
 
     _sendKeyEvent(keysym, code, down) {
-        if (down) {
-            this._keyDownList[code] = keysym;
-        } else {
-            // Do we really think this key is down?
-            if (!(code in this._keyDownList)) {
-                return;
-            }
-            delete this._keyDownList[code];
-        }
+      if (down) {
+          this._keyDownList[code] = keysym;
+      } else {
+          // Do we really think this key is down?
+          if (!(code in this._keyDownList)) {
+              return;
+          }
+          delete this._keyDownList[code];
+      }
 
-        console.debug("onkeyevent " + (down ? "down" : "up") +
-                  ", keysym: " + keysym, ", code: " + code);
-        this.onkeyevent(keysym, code, down);
+      //console.debug("onkeyevent " + (down ? "down" : "up") +
+      //          ", keysym: " + keysym, ", code: " + code);
+      //20220924: NEKO: Return a value.
+      return this.onkeyevent(keysym, code, down);
     }
 
     _getKeyCode(e) {
@@ -182,7 +187,8 @@ export default class Keyboard {
         }
 
         this._pendingKey = null;
-        stopEvent(e);
+        //20220924: NEKO: Do not stop propagation.
+        //stopEvent(e);
 
         // Possible start of AltGr sequence? (see above)
         if ((code === "ControlLeft") && browser.isWindows() &&
@@ -193,7 +199,10 @@ export default class Keyboard {
             return;
         }
 
-        this._sendKeyEvent(keysym, code, true);
+        //20220924: NEKO: Stop propagation only if wanted.
+        if(!this._sendKeyEvent(keysym, code, true)) {
+            stopEvent(e);
+        }
     }
 
     // Legacy event for browsers without code/key
@@ -217,7 +226,7 @@ export default class Keyboard {
         this._pendingKey = null;
 
         if (!keysym) {
-            console.Info('keypress with no keysym:', e);
+            //console.info('keypress with no keysym:', e);
             return;
         }
 
@@ -304,11 +313,11 @@ export default class Keyboard {
     }
 
     _allKeysUp() {
-        console.debug(">> Keyboard.allKeysUp");
+        //console.debug(">> Keyboard.allKeysUp");
         for (let code in this._keyDownList) {
             this._sendKeyEvent(this._keyDownList[code], code, false);
         }
-        console.debug("<< Keyboard.allKeysUp");
+        //console.debug("<< Keyboard.allKeysUp");
     }
 
     // Alt workaround for Firefox on Windows, see below
@@ -338,7 +347,7 @@ export default class Keyboard {
     // ===== PUBLIC METHODS =====
 
     grab() {
-        console.debug(">> Keyboard.grab");
+        //console.debug(">> Keyboard.grab");
 
         this._target.addEventListener('keydown', this._eventHandlers.keydown);
         this._target.addEventListener('keyup', this._eventHandlers.keyup);
@@ -361,11 +370,11 @@ export default class Keyboard {
                                             passive: true }));
         }
 
-        console.debug("<< Keyboard.grab");
+        //console.debug("<< Keyboard.grab");
     }
 
     ungrab() {
-        console.debug(">> Keyboard.ungrab");
+        //console.debug(">> Keyboard.ungrab");
 
         if (browser.isWindows() && browser.isFirefox()) {
             const handler = this._eventHandlers.checkalt;
@@ -382,6 +391,6 @@ export default class Keyboard {
         // Release (key up) all keys that are in a down state
         this._allKeysUp();
 
-        console.debug(">> Keyboard.ungrab");
+        //console.debug(">> Keyboard.ungrab");
     }
 };
