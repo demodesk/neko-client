@@ -52,8 +52,8 @@ export default class Keyboard {
 
         //console.debug("onkeyevent " + (down ? "down" : "up") +
         //          ", keysym: " + keysym, ", code: " + code);
-      //20220924: NEKO: Return a value.
-      return this.onkeyevent(keysym, code, down);
+        //20220924: NEKO: Return a value.
+        return this.onkeyevent(keysym, code, down);
     }
 
     _getKeyCode(e) {
@@ -197,7 +197,7 @@ export default class Keyboard {
         //20220924: NEKO: Stop propagation only if wanted.
         if(!this._sendKeyEvent(keysym, code, true)) {
           stopEvent(e);
-      }
+        }
     }
 
     _handleKeyUp(e) {

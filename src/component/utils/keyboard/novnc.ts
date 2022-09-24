@@ -2,7 +2,7 @@ import Keyboard from './novnc.js'
 
 export interface NoVncKeyboardInterface {
   // original functions
-  onkeyevent: (keysym: number, code: number, down: boolean) => boolean
+  onkeyevent: (keysym: number | null, code: string, down: boolean) => boolean
   grab: () => void
   ungrab: () => void
 
@@ -19,7 +19,8 @@ export default function (element?: Element): NoVncKeyboardInterface {
   const keyboard = new Keyboard(element)
 
   // map on key event to onkeydown and onkeyup
-  keyboard.onkeyevent = function (keysym: number, code: number, down: boolean) {
+  keyboard.onkeyevent = function (keysym: number | null, code: string, down: boolean) {
+    if (keysym === null) return false
     if (down) return this.onkeydown(keysym, code)
     this.onkeyup(keysym, code)
   }
