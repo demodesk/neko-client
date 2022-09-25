@@ -7,7 +7,7 @@ export interface NoVncKeyboardInterface {
   ungrab: () => void
 
   // custom functions
-  onkeydown?: (keysym: number) => boolean
+  onkeydown?: (keysym: number, event: KeyboardEvent) => boolean
   onkeyup?: (keysym: number) => void
   release: (keysym: number) => void
   listenTo: (element: Element | Document) => void
@@ -19,10 +19,10 @@ export default function (element?: Element): NoVncKeyboardInterface {
   const keyboard = new Keyboard(element)
 
   // map on key event to onkeydown and onkeyup
-  keyboard.onkeyevent = function (keysym: number | null, code: string, down: boolean) {
+  keyboard.onkeyevent = function (keysym: number | null, code: string, down: boolean, event: KeyboardEvent) {
     if (keysym === null) return false
-    if (down) return this.onkeydown(keysym, code)
-    this.onkeyup(keysym, code)
+    if (down) return this.onkeydown(keysym, event)
+    this.onkeyup(keysym)
   }
 
   // add release function

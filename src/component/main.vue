@@ -33,6 +33,7 @@
         :cursorDraw="cursorDrawFunction"
         :implicitControl="state.settings.implicit_hosting && session.profile.can_host"
         :inactiveCursors="state.settings.inactive_cursors && session.profile.sends_inactive_cursor"
+        :logger="connection.logger.new('overlay')"
         @updateKeyboardModifiers="updateKeyboardModifiers($event)"
         @uploadDrop="uploadDrop($event)"
       />

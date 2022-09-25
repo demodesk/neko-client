@@ -262,6 +262,8 @@ Guacamole.Keyboard = function Keyboard(element) {
         // We extend KeyEvent
         KeyEvent.call(this, orig);
 
+        this.orig = orig
+
         // If key is known from keyCode or DOM3 alone, use that
         this.keysym =  keysym_from_key_identifier(this.key, this.location)
                     || keysym_from_keycode(this.keyCode, this.location);
@@ -807,7 +809,7 @@ Guacamole.Keyboard = function Keyboard(element) {
      * @return {boolean}
      *     true if event should NOT be canceled, false otherwise.
      */
-    this.press = function(keysym) {
+    this.press = function(keysym, event) {
 
         // Don't bother with pressing the key if the key is unknown
         if (keysym === null) return;
@@ -820,7 +822,7 @@ Guacamole.Keyboard = function Keyboard(element) {
 
             // Send key event
             if (guac_keyboard.onkeydown) {
-                var result = guac_keyboard.onkeydown(keysym);
+                var result = guac_keyboard.onkeydown(keysym, event);
                 last_keydown_result[keysym] = result;
 
                 // Stop any current repeat
@@ -832,7 +834,7 @@ Guacamole.Keyboard = function Keyboard(element) {
                     key_repeat_timeout = window.setTimeout(function() {
                         key_repeat_interval = window.setInterval(function() {
                             guac_keyboard.onkeyup(keysym);
-                            guac_keyboard.onkeydown(keysym);
+                            guac_keyboard.onkeydown(keysym, event);
                         }, 50);
                     }, 500);
 
@@ -1186,7 +1188,7 @@ Guacamole.Keyboard = function Keyboard(element) {
 
                     // Fire event
                     release_simulated_altgr(keysym);
-                    var defaultPrevented = !guac_keyboard.press(keysym);
+                    var defaultPrevented = !guac_keyboard.press(keysym, first.orig);
                     recentKeysym[first.keyCode] = keysym;
 
                     // Release the key now if we cannot rely on the associated

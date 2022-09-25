@@ -10,7 +10,7 @@ export interface GuacamoleKeyboardInterface {
    * @return {Boolean} true if the key event should be allowed through to the
    *                   browser, false otherwise.
    */
-  onkeydown?: (keysym: number) => boolean
+  onkeydown?: (keysym: number, event: KeyboardEvent) => boolean
 
   /**
    * Fired whenever the user releases a key with the element associated

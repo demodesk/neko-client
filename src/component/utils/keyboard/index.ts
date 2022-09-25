@@ -2,7 +2,7 @@ import NoVnc from './novnc'
 import Guacamole from './guacamole'
 
 export interface KeyboardInterface {
-  onkeydown?: (keysym: number) => boolean
+  onkeydown?: (keysym: number, event: KeyboardEvent) => boolean
   onkeyup?: (keysym: number) => void
   release: (keysym: number) => void
   listenTo: (element: Element | Document) => void

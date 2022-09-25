@@ -46,6 +46,7 @@
   import { Vue, Component, Ref, Prop, Watch } from 'vue-property-decorator'
 
   import { KeyboardInterface, GuacamoleKeyboard, NoVncKeyboard } from './utils/keyboard'
+  import { Logger } from './utils/logger'
   import { KeyTable, keySymsRemap } from './utils/keyboard-remapping'
   import { getFilesFromDataTansfer } from './utils/file-upload'
   import { NekoControl } from './internal/control'
@@ -71,6 +72,9 @@
 
     private keyboard!: KeyboardInterface
     private focused = false
+
+    @Prop()
+    private readonly logger!: Logger
 
     @Prop()
     private readonly wsControl!: NekoControl
@@ -131,15 +135,61 @@
       let ctrlKey = 0
       let noKeyUp = {} as Record<number, boolean>
 
-      // Initialize Keyboard
-      if ('NEKO_USE_GUACAMOLE' in window) {
-        this.keyboard = GuacamoleKeyboard()
-      } else {
-        this.keyboard = NoVncKeyboard()
+      let novncLog: any = []
+      let guacLog: any = []
+
+      let processLog = () =>  {
+        if (!novncLog.length || !guacLog.length) return
+
+        for (let e in novncLog) {
+          let novnc = novncLog[e]
+          let f = guacLog.findIndex((g:any) => g.key == novnc.key)
+          if (f == -1) {
+            continue
+          }
+          let guac = guacLog[f]
+          novncLog.splice(e, 1)
+          guacLog.splice(f, 1)
+
+          if (novnc.keysym != guac.keysym) {
+            this.logger.warn('keydown event difference', { novnc, guac })
+          } else {
+            //this.logger.debug('keydown event', { ...novnc, novncLen: novncLog.length, guacLen: guacLog.length })
+          }
+        }
       }
 
-      this.keyboard.onkeydown = (key: number) => {
-        key = keySymsRemap(key)
+      function state(e: KeyboardEvent) {
+        return {
+          alt: e.getModifierState('Alt'),
+          altGraph: e.getModifierState('AltGraph'),
+          capsLock: e.getModifierState('CapsLock'),
+          control: e.getModifierState('Control'),
+          shift: e.getModifierState('Shift'),
+          meta: e.getModifierState('Meta'),
+          hyper: e.getModifierState('OS') || e.getModifierState('Super') || e.getModifierState('Hyper') || e.getModifierState('Win'),
+        } as any
+      }
+
+      // Initialize Keyboard
+      let guac = GuacamoleKeyboard()
+      guac.onkeydown = (keysym: number, event: KeyboardEvent): boolean =>  {
+        if (event) {
+          guacLog.push({ key: event.key, keyCode: event.keyCode, code: event.code, keysym, state: state(event) })
+          processLog()
+        }
+        return false
+      }
+      guac.onkeyup = (key: number) => {}
+      guac.listenTo(this._textarea)
+
+      this.keyboard = NoVncKeyboard()
+      this.keyboard.onkeydown = (keysym: number, event: KeyboardEvent) => {
+        if (event) {
+          novncLog.push({ key: event.key, keyCode: event.keyCode, code: event.code, keysym, state: state(event) })
+          processLog()
+        }
+        let key = keySymsRemap(keysym)
 
         if (!this.isControling) {
           noKeyUp[key] = true

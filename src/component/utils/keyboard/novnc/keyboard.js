@@ -39,7 +39,7 @@ export default class Keyboard {
 
     // ===== PRIVATE METHODS =====
 
-    _sendKeyEvent(keysym, code, down) {
+    _sendKeyEvent(keysym, code, down, event) {
         if (down) {
             this._keyDownList[code] = keysym;
         } else {
@@ -53,7 +53,7 @@ export default class Keyboard {
         //console.debug("onkeyevent " + (down ? "down" : "up") +
         //          ", keysym: " + keysym, ", code: " + code);
         //20220924: NEKO: Return a value.
-        return this.onkeyevent(keysym, code, down);
+        return this.onkeyevent(keysym, code, down, event);
     }
 
     _getKeyCode(e) {
@@ -195,7 +195,7 @@ export default class Keyboard {
         }
 
         //20220924: NEKO: Stop propagation only if wanted.
-        if(!this._sendKeyEvent(keysym, code, true)) {
+        if(!this._sendKeyEvent(keysym, code, true, e)) {
           stopEvent(e);
         }
     }
