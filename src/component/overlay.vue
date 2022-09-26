@@ -138,12 +138,12 @@
       let novncLog: any = []
       let guacLog: any = []
 
-      let processLog = () =>  {
+      let processLog = () => {
         if (!novncLog.length || !guacLog.length) return
 
         for (let e in novncLog) {
           let novnc = novncLog[e]
-          let f = guacLog.findIndex((g:any) => g.key == novnc.key)
+          let f = guacLog.findIndex((g: any) => g.key == novnc.key)
           if (f == -1) {
             continue
           }
@@ -167,26 +167,31 @@
           control: e.getModifierState('Control'),
           shift: e.getModifierState('Shift'),
           meta: e.getModifierState('Meta'),
-          hyper: e.getModifierState('OS') || e.getModifierState('Super') || e.getModifierState('Hyper') || e.getModifierState('Win'),
+          hyper:
+            e.getModifierState('OS') ||
+            e.getModifierState('Super') ||
+            e.getModifierState('Hyper') ||
+            e.getModifierState('Win'),
         } as any
       }
 
-      // Initialize Keyboard
-      let guac = GuacamoleKeyboard()
-      guac.onkeydown = (keysym: number, event: KeyboardEvent): boolean =>  {
+      // Initialize NoVnc Keyboard
+      let novnc = NoVncKeyboard()
+      novnc.onkeydown = (keysym: number, event: KeyboardEvent): boolean => {
         if (event) {
-          guacLog.push({ key: event.key, keyCode: event.keyCode, code: event.code, keysym, state: state(event) })
+          novncLog.push({ key: event.key, keyCode: event.keyCode, code: event.code, keysym, state: state(event) })
           processLog()
         }
         return false
       }
-      guac.onkeyup = (key: number) => {}
-      guac.listenTo(this._textarea)
+      novnc.onkeyup = (key: number) => {}
+      novnc.listenTo(this._textarea)
 
-      this.keyboard = NoVncKeyboard()
+      // Initialize Guacamole Keyboard
+      this.keyboard = GuacamoleKeyboard()
       this.keyboard.onkeydown = (keysym: number, event: KeyboardEvent) => {
         if (event) {
-          novncLog.push({ key: event.key, keyCode: event.keyCode, code: event.code, keysym, state: state(event) })
+          guacLog.push({ key: event.key, keyCode: event.keyCode, code: event.code, keysym, state: state(event) })
           processLog()
         }
         let key = keySymsRemap(keysym)
