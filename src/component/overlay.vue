@@ -182,7 +182,7 @@
           novncLog.push({ key: event.key, keyCode: event.keyCode, code: event.code, keysym, state: state(event) })
           processLog()
         }
-        return false
+        return true
       }
       novnc.onkeyup = (key: number) => {}
       novnc.listenTo(this._textarea)
