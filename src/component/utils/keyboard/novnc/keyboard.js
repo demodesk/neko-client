@@ -130,25 +130,37 @@ export default class Keyboard {
             return;
         }
 
-        // Alt behaves more like AltGraph on macOS, so shuffle the
-        // keys around a bit to make things more sane for the remote
-        // server. This method is used by RealVNC and TigerVNC (and
-        // possibly others).
         if (browser.isMac() || browser.isIOS()) {
-            switch (keysym) {
-                case KeyTable.XK_Super_L:
-                    keysym = KeyTable.XK_Alt_L;
-                    break;
-                case KeyTable.XK_Super_R:
-                    keysym = KeyTable.XK_Super_L;
-                    break;
-                case KeyTable.XK_Alt_L:
-                    keysym = KeyTable.XK_Mode_switch;
-                    break;
-                case KeyTable.XK_Alt_R:
-                    keysym = KeyTable.XK_ISO_Level3_Shift;
-                    break;
-            }
+          // If a key is pressed while meta is held down, the keyup will
+          // never be sent in Chrome (bug #108404) and possibly others
+          if (e.metaKey && keysym !== KeyTable.XK_Super_L && keysym !== KeyTable.XK_Super_R) {
+              //20220927: NEKO: Stop propagation only if wanted.
+              let propagation = this._sendKeyEvent(keysym, code, true);
+              this._sendKeyEvent(keysym, code, false);
+              //20220927: NEKO: Stop propagation only if wanted.
+              if (!propagation) stopEvent(e);
+              return;
+          }
+
+          // Alt behaves more like AltGraph on macOS, so shuffle the
+          // keys around a bit to make things more sane for the remote
+          // server. This method is used by RealVNC and TigerVNC (and
+          // possibly others).
+          switch (keysym) {
+              //20220927: NEKO: Do not hijack CMD keys.
+              //case KeyTable.XK_Super_L:
+              //    keysym = KeyTable.XK_Alt_L;
+              //    break;
+              //case KeyTable.XK_Super_R:
+              //    keysym = KeyTable.XK_Super_L;
+              //    break;
+              case KeyTable.XK_Alt_L:
+                  keysym = KeyTable.XK_Mode_switch;
+                  break;
+              case KeyTable.XK_Alt_R:
+                  keysym = KeyTable.XK_ISO_Level3_Shift;
+                  break;
+          }
         }
 
         // Is this key already pressed? If so, then we must use the
