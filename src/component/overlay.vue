@@ -45,7 +45,7 @@
 <script lang="ts">
   import { Vue, Component, Ref, Prop, Watch } from 'vue-property-decorator'
 
-  import { KeyboardInterface, GuacamoleKeyboard, NoVncKeyboard } from './utils/keyboard'
+  import { KeyboardInterface, NewKeyboard } from './utils/keyboard'
   import { KeyTable, keySymsRemap } from './utils/keyboard-remapping'
   import { getFilesFromDataTansfer } from './utils/file-upload'
   import { NekoControl } from './internal/control'
@@ -132,12 +132,7 @@
       let noKeyUp = {} as Record<number, boolean>
 
       // Initialize Keyboard
-      if ('NEKO_USE_GUACAMOLE' in window) {
-        this.keyboard = GuacamoleKeyboard()
-      } else {
-        this.keyboard = NoVncKeyboard()
-      }
-
+      this.keyboard = NewKeyboard()
       this.keyboard.onkeydown = (key: number) => {
         key = keySymsRemap(key)
 
