@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3'
-import { SYSTEM_LOGS } from '../types/events'
+import { SYSTEM_HEARTBEAT, SYSTEM_LOGS } from '../types/events'
 import { Logger } from '../utils/logger'
 
 export interface NekoWebSocketEvents {
@@ -27,8 +27,16 @@ const statusCodeMap = {
   1015: 'TLS Handshake',
 } as Record<number, string>
 
+// how long can connection be idle before closing
+const staleTimeout = 12_500 // 12.5 seconds
+
+// how often should heartbeat be evaluated
+const staleInterval = 7_000 // 7 seconds
+
 export class NekoWebSocket extends EventEmitter<NekoWebSocketEvents> {
   private _ws?: WebSocket
+  private _heartbeat?: number
+  private _last_received?: Date
 
   // eslint-disable-next-line
   constructor(
@@ -78,6 +86,13 @@ export class NekoWebSocket extends EventEmitter<NekoWebSocketEvents> {
   }
 
   public disconnect(reason: string) {
+    this._last_received = undefined
+
+    if (this._heartbeat) {
+      window.clearInterval(this._heartbeat)
+      this._heartbeat = undefined
+    }
+
     if (typeof this._ws !== 'undefined') {
       // unmount all events
       this._ws.onopen = () => {}
@@ -106,6 +121,10 @@ export class NekoWebSocket extends EventEmitter<NekoWebSocketEvents> {
   private onMessage(e: MessageEvent) {
     const { event, payload } = JSON.parse(e.data)
 
+    this._last_received = new Date()
+    // heartbeat only updates last_received
+    if (event == SYSTEM_HEARTBEAT) return
+
     this._log.debug(`received websocket event`, { event, payload })
     this.emit('message', event, payload)
   }
@@ -116,6 +135,10 @@ export class NekoWebSocket extends EventEmitter<NekoWebSocketEvents> {
       return
     }
 
+    // periodically check heartbeat
+    if (this._heartbeat) window.clearInterval(this._heartbeat)
+    this._heartbeat = window.setInterval(this.onHeartbeat.bind(this), staleInterval)
+
     this._log.info(`connected`)
     this.emit('connected')
   }
@@ -125,5 +148,17 @@ export class NekoWebSocket extends EventEmitter<NekoWebSocketEvents> {
 
     this._log.info(`disconnected`, { reason })
     this.emit('disconnected', new Error(`connection ${reason}`))
+  }
+
+  private onHeartbeat() {
+    if (!this._last_received) return
+
+    // if we haven't received a message in specified time,
+    // assume the connection is dead
+    const diff = new Date().getTime() - this._last_received.getTime()
+    if (diff < staleTimeout) return
+
+    this._log.warn(`websocket connection is stale, disconnecting`)
+    this.onDisconnected('stale')
   }
 }
