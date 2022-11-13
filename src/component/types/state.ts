@@ -40,6 +40,7 @@ export interface WebRTC {
   video: string | null
   bitrate: number | null
   videos: string[]
+  video_auto: boolean
 }
 
 export interface ReconnectorConfig extends reconnectorTypes.ReconnectorConfig {}

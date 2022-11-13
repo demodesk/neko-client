@@ -156,6 +156,7 @@
           video: null,
           bitrate: null,
           videos: [],
+          video_auto: false,
         },
         screencast: true, // TODO: Should get by API call.
         type: 'none',
@@ -422,6 +423,10 @@
       this.connection.setVideo(video, bitrate)
     }
 
+    public setWebRTCVideoAuto(video_auto: boolean) {
+      this.connection.setVideoAuto(video_auto)
+    }
+
     public addTrack(track: MediaStreamTrack, ...streams: MediaStream[]): RTCRtpSender {
       return this.connection.webrtc.addTrack(track, ...streams)
     }
@@ -634,6 +639,7 @@
 
       // websocket
       Vue.set(this.state.connection.webrtc, 'videos', [])
+      Vue.set(this.state.connection.webrtc, 'video_auto', false)
       Vue.set(this.state.control, 'clipboard', null)
       Vue.set(this.state.control, 'host_id', null)
       Vue.set(this.state.screen, 'size', { width: 1280, height: 720, rate: 30 })

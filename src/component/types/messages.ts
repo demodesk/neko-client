@@ -9,6 +9,7 @@ export interface SystemSettings extends Settings {}
 
 export interface SystemWebRTC {
   videos: string[]
+  video_auto: boolean
 }
 
 export interface SystemInit {
@@ -46,6 +47,7 @@ export interface SignalProvide {
   sdp: string
   iceservers: ICEServer[]
   video: string
+  video_auto: boolean
 }
 
 export type SignalCandidate = RTCIceCandidateInit
@@ -57,6 +59,10 @@ export interface SignalDescription {
 export interface SignalVideo {
   video: string
   bitrate: number
+}
+
+export interface SignalVideoAuto {
+  video_auto: boolean
 }
 
 /////////////////////////////

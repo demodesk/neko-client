@@ -164,6 +164,16 @@
         </td>
       </tr>
       <tr>
+        <th>connection.webrtc.video_auto</th>
+        <td>
+          <select :value="neko.state.connection.webrtc.video_auto" @input="neko.setWebRTCVideoAuto($event.target.value == 'true')">
+            <option v-for="val in ['true','false']" :key="val" :value="val">
+              {{ val }}
+            </option>
+          </select>
+        </td>
+      </tr>
+      <tr>
         <th>connection.screencast</th>
         <td>{{ neko.state.connection.screencast }}</td>
       </tr>

@@ -5,17 +5,12 @@ import * as EVENT from '../types/events'
 import { NekoWebSocket } from './websocket'
 import { NekoLoggerFactory } from './logger'
 import { NekoWebRTC } from './webrtc'
-import { Connection, WebRTCStats } from '../types/state'
+import { Connection } from '../types/state'
 
 import { Reconnector } from './reconnector'
 import { WebsocketReconnector } from './reconnector/websocket'
 import { WebrtcReconnector } from './reconnector/webrtc'
 import { Logger } from '../utils/logger'
-
-const WEBRTC_RECONN_MAX_LOSS = 25
-const WEBRTC_RECONN_FAILED_ATTEMPTS = 5
-
-const WEBRTC_FALLBACK_TIMEOUT_MS = 750
 
 export interface NekoConnectionEvents {
   close: (error?: Error) => void
@@ -36,8 +31,6 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
   private _onConnectHandle: () => void
   private _onDisconnectHandle: () => void
   private _onCloseHandle: (error?: Error) => void
-
-  private _webrtcCongestionControlHandle: (stats: WebRTCStats) => void
   private _webrtcStableHandle: (isStable: boolean) => void
 
   // eslint-disable-next-line
@@ -91,67 +84,6 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       Vue.set(this._state.webrtc, 'stable', isStable)
     }
     this.webrtc.on('stable', this._webrtcStableHandle)
-
-    //
-    // TODO: Use server side congestion control.
-    //
-
-    let webrtcCongestion: number = 0
-    let webrtcFallbackTimeout: number
-
-    this._webrtcCongestionControlHandle = (stats: WebRTCStats) => {
-      Vue.set(this._state.webrtc, 'stats', stats)
-
-      // when connection is paused, 0fps and muted track is expected
-      if (stats.paused) return
-
-      // if automatic quality adjusting is turned off
-      if (!this._reconnector.webrtc.isOpen) return
-
-      // if there are no or just one quality, no switching can be done
-      if (this._state.webrtc.videos.length <= 1) return
-
-      // current quality is not known
-      if (this._state.webrtc.video == null) return
-
-      // check if video is not playing smoothly
-      if (stats.fps && stats.packetLoss < WEBRTC_RECONN_MAX_LOSS && !stats.muted) {
-        if (webrtcFallbackTimeout) {
-          window.clearTimeout(webrtcFallbackTimeout)
-        }
-
-        Vue.set(this._state.webrtc, 'connected', true)
-        webrtcCongestion = 0
-        return
-      }
-
-      // try to downgrade quality if it happend many times
-      if (++webrtcCongestion >= WEBRTC_RECONN_FAILED_ATTEMPTS) {
-        webrtcFallbackTimeout = window.setTimeout(() => {
-          Vue.set(this._state.webrtc, 'connected', false)
-        }, WEBRTC_FALLBACK_TIMEOUT_MS)
-
-        webrtcCongestion = 0
-
-        const quality = this._webrtcQualityDowngrade(this._state.webrtc.video)
-
-        // downgrade if lower video quality exists
-        if (quality && this.webrtc.connected) {
-          this.setVideo(quality)
-        }
-
-        // try to perform ice restart, if available
-        if (this.webrtc.open) {
-          this.websocket.send(EVENT.SIGNAL_RESTART)
-          return
-        }
-
-        // try to reconnect webrtc
-        this._reconnector.webrtc.reconnect()
-      }
-    }
-
-    this.webrtc.on('stats', this._webrtcCongestionControlHandle)
   }
 
   public get activated() {
@@ -174,6 +106,10 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
     }
 
     this.websocket.send(EVENT.SIGNAL_VIDEO, { video, bitrate })
+  }
+
+  public setVideoAuto(video_auto: boolean) {
+    this.websocket.send(EVENT.SIGNAL_VIDEO_AUTO, { video_auto })
   }
 
   public getLogger(scope?: string): Logger {
@@ -224,7 +160,6 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
     this.logger.destroy()
 
     // TODO: Use server side congestion control.
-    this.webrtc.off('stats', this._webrtcCongestionControlHandle)
     this.webrtc.off('stable', this._webrtcStableHandle)
 
     // unbind events from all reconnectors
@@ -241,19 +176,5 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
     Vue.set(this._state.websocket, 'connected', false)
     Vue.set(this._state.webrtc, 'connected', false)
     Vue.set(this._state, 'status', 'disconnected')
-  }
-
-  _webrtcQualityDowngrade(quality: string): string | undefined {
-    // get index of selected or surrent quality
-    const index = this._state.webrtc.videos.indexOf(quality)
-
-    // edge case: current quality is not in qualities list
-    if (index === -1) return
-
-    // current quality is the lowest one
-    if (index + 1 == this._state.webrtc.videos.length) return
-
-    // downgrade video quality
-    return this._state.webrtc.videos[index + 1]
   }
 }
