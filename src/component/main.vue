@@ -419,12 +419,8 @@
       this.connection.websocket.send(EVENT.SCREEN_SET, { width, height, rate })
     }
 
-    public setWebRTCVideo(video: string, bitrate: number = 0) {
-      this.connection.setVideo(video, bitrate)
-    }
-
-    public setWebRTCVideoAuto(video_auto: boolean) {
-      this.connection.setVideoAuto(video_auto)
+    public setWebRTCVideo(video: string, bitrate: number = 0, video_auto: boolean) {
+      this.connection.setVideo(video, bitrate, video_auto)
     }
 
     public addTrack(track: MediaStreamTrack, ...streams: MediaStream[]): RTCRtpSender {

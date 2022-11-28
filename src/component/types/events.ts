@@ -12,7 +12,6 @@ export const SIGNAL_ANSWER = 'signal/answer'
 export const SIGNAL_PROVIDE = 'signal/provide'
 export const SIGNAL_CANDIDATE = 'signal/candidate'
 export const SIGNAL_VIDEO = 'signal/video'
-export const SIGNAL_VIDEO_AUTO = 'signal/video_auto'
 export const SIGNAL_CLOSE = 'signal/close'
 
 export const SESSION_CREATED = 'session/created'

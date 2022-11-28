@@ -59,9 +59,6 @@ export interface SignalDescription {
 export interface SignalVideo {
   video: string
   bitrate: number
-}
-
-export interface SignalVideoAuto {
   video_auto: boolean
 }
 

@@ -196,14 +196,10 @@ export class NekoMessages extends EventEmitter<NekoEvents> {
     this.emit('connection.webrtc.sdp.candidate', 'remote', candidate)
   }
 
-  protected [EVENT.SIGNAL_VIDEO]({ video, bitrate }: message.SignalVideo) {
-    this._localLog.debug(`EVENT.SIGNAL_VIDEO`, { video, bitrate })
+  protected [EVENT.SIGNAL_VIDEO]({ video, bitrate, video_auto }: message.SignalVideo) {
+    this._localLog.debug(`EVENT.SIGNAL_VIDEO`, { video, bitrate, video_auto })
     Vue.set(this._state.connection.webrtc, 'video', video)
     Vue.set(this._state.connection.webrtc, 'bitrate', bitrate)
-  }
-
-  protected [EVENT.SIGNAL_VIDEO_AUTO]({ video_auto }: message.SignalVideoAuto) {
-    this._localLog.debug(`EVENT.SIGNAL_VIDEO_AUTO`, { video_auto })
     Vue.set(this._state.connection.webrtc, 'video_auto', video_auto)
   }
 
