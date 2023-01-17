@@ -3,6 +3,8 @@ import { WebRTCStats, CursorPosition, CursorImage } from '../types/webrtc'
 import { Logger } from '../utils/logger'
 import { videoSnap } from '../utils/video-snap'
 
+const maxUint32 = 2 ** 32 - 1
+
 export const OPCODE = {
   MOVE: 0x01,
   SCROLL: 0x02,
@@ -10,6 +12,7 @@ export const OPCODE = {
   KEY_UP: 0x04,
   BTN_DOWN: 0x05,
   BTN_UP: 0x06,
+  PING: 0x07,
 } as const
 
 export interface ICEServer {
@@ -340,6 +343,7 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
 
   public send(event: 'wheel' | 'mousemove', data: { x: number; y: number }): void
   public send(event: 'mousedown' | 'mouseup' | 'keydown' | 'keyup', data: { key: number }): void
+  public send(event: 'ping', data: number): void
   public send(event: string, data: any): void {
     if (typeof this._channel === 'undefined' || this._channel.readyState !== 'open') {
       this._log.warn(`attempting to send data, but data-channel is not open`, { event })
@@ -392,6 +396,14 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
         payload.setUint8(0, OPCODE.BTN_UP)
         payload.setUint16(1, 4)
         payload.setUint32(3, data.key)
+        break
+      case 'ping':
+        buffer = new ArrayBuffer(11)
+        payload = new DataView(buffer)
+        payload.setUint8(0, OPCODE.PING)
+        payload.setUint16(1, 8)
+        payload.setUint32(3, Math.trunc(data / maxUint32))
+        payload.setUint32(7, data % maxUint32)
         break
       default:
         this._log.warn(`unknown data event`, { event })
@@ -456,6 +468,22 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
           })
         }
         reader.readAsDataURL(blob)
+
+        break
+      case 3:
+        const nowTs = Date.now()
+
+        const [clientTs1, clientTs2] = [payload.getUint32(3), payload.getUint32(7)]
+        const clientTs = clientTs1 * maxUint32 + clientTs2
+        const [serverTs1, serverTs2] = [payload.getUint32(11), payload.getUint32(15)]
+        const serverTs = serverTs1 * maxUint32 + serverTs2
+
+        const reqLatency = serverTs - clientTs
+        const resLatency = nowTs - serverTs
+        const latency = reqLatency + resLatency
+        console.log('server latency (ms)', reqLatency)
+        console.log('client latency (ms)', resLatency)
+        console.log('total latency (ms)', latency)
 
         break
       default:
@@ -523,6 +551,8 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
         const framesDecodedDiff = report.framesDecoded - framesDecoded
         const packetsLostDiff = report.packetsLost - packetsLost
         const packetsReceivedDiff = report.packetsReceived - packetsReceived
+
+        this.send('ping', Date.now())
 
         this.emit('stats', {
           // Firefox does not emit any event when starting paused
