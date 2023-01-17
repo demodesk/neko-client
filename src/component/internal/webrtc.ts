@@ -481,9 +481,7 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
         const reqLatency = serverTs - clientTs
         const resLatency = nowTs - serverTs
         const latency = reqLatency + resLatency
-        console.log('server latency (ms)', reqLatency)
-        console.log('client latency (ms)', resLatency)
-        console.log('total latency (ms)', latency)
+        console.log('latency (ms), server:', reqLatency, 'client:', resLatency, 'total:', latency)
 
         break
       default:
