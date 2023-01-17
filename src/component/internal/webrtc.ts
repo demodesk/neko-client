@@ -534,6 +534,8 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
           width: report.frameWidth || NaN,
           height: report.frameHeight || NaN,
           muted: this._track?.muted,
+          // include full report for debugging
+          report: report,
         })
       }
 
