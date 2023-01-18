@@ -47,6 +47,8 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
   private _connected = false
   private _candidates: RTCIceCandidateInit[] = []
   private _statsStop?: () => void
+  private _requestLatency = 0
+  private _responseLatency = 0
 
   // eslint-disable-next-line
   constructor(
@@ -478,10 +480,8 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
         const [serverTs1, serverTs2] = [payload.getUint32(11), payload.getUint32(15)]
         const serverTs = serverTs1 * maxUint32 + serverTs2
 
-        const reqLatency = serverTs - clientTs
-        const resLatency = nowTs - serverTs
-        const latency = reqLatency + resLatency
-        console.log('latency (ms), server:', reqLatency, 'client:', resLatency, 'total:', latency)
+        this._requestLatency = serverTs - clientTs
+        this._responseLatency = nowTs - serverTs
 
         break
       default:
@@ -550,8 +550,6 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
         const packetsLostDiff = report.packetsLost - packetsLost
         const packetsReceivedDiff = report.packetsReceived - packetsReceived
 
-        this.send('ping', Date.now())
-
         this.emit('stats', {
           // Firefox does not emit any event when starting paused
           // because there is no video report found in stats.
@@ -562,8 +560,10 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
           width: report.frameWidth || NaN,
           height: report.frameHeight || NaN,
           muted: this._track?.muted,
-          // include full report for debugging
-          report: report,
+          // latency from ping/pong messages
+          latency: this._requestLatency + this._responseLatency,
+          requestLatency: this._requestLatency,
+          responseLatency: this._responseLatency,
         })
       }
 
@@ -572,6 +572,8 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
       framesDecoded = report.framesDecoded
       packetsLost = report.packetsLost
       packetsReceived = report.packetsReceived
+
+      this.send('ping', Date.now())
     }, ms)
 
     return function () {

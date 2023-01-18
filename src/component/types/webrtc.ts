@@ -6,7 +6,9 @@ export interface WebRTCStats {
   width: number
   height: number
   muted?: boolean
-  report: RTCStatsReport
+  latency: number
+  requestLatency: number
+  responseLatency: number
 }
 
 export interface CursorPosition {
