@@ -115,7 +115,7 @@
                 :title="
                   'request: ' +
                   neko.state.connection.webrtc.stats.requestLatency +
-                  'ms, response:' +
+                  'ms, response: ' +
                   neko.state.connection.webrtc.stats.responseLatency +
                   'ms'
                 "
