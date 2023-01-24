@@ -33,8 +33,9 @@
     bottom: 0;
     width: 100%;
     height: 100%;
-    font-size: 1px; /* chrome would not paste text if 0px */
+    font-size: 16px; /* at least 16px to avoid zooming on mobile */
     resize: none; /* hide textarea resize corner */
+    caret-color: transparent; /* hide caret */
     outline: 0;
     border: 0;
     color: transparent;
