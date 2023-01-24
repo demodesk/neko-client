@@ -43,7 +43,11 @@
         </div>
       </div>
       <div class="room-container" style="text-align: center">
-        <button v-if="isTouchDevice" @click="showMobileKeyboard" style="position: absolute; left: 5px; transform: translateY(-100%)">
+        <button
+          v-if="isTouchDevice"
+          @click="showMobileKeyboard"
+          style="position: absolute; left: 5px; transform: translateY(-100%)"
+        >
           <i class="fa fa-keyboard" />
         </button>
         <span v-if="loaded && neko.state.session_id" style="padding-top: 10px">
