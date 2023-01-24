@@ -43,6 +43,9 @@
         </div>
       </div>
       <div class="room-container" style="text-align: center">
+        <button v-if="isTouchDevice" @click="showMobileKeyboard" style="position: absolute; left: 5px; transform: translateY(-100%)">
+          <i class="fa fa-keyboard" />
+        </button>
         <span v-if="loaded && neko.state.session_id" style="padding-top: 10px">
           You are logged in as
           <strong style="font-weight: bold">
@@ -377,6 +380,15 @@
 
     uploadActive = false
     uploadProgress = 0
+
+    get isTouchDevice(): boolean {
+      return 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    }
+
+    showMobileKeyboard() {
+      // @ts-ignore
+      document.querySelector('textarea.neko-overlay').focus()
+    }
 
     dialogOverlayActive = false
     dialogRequestActive = false
