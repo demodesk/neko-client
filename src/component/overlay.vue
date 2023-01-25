@@ -630,5 +630,13 @@
         this.wsControl.release()
       }
     }
+
+    public showMobileKeyboard() {
+      this._textarea.focus()
+    }
+
+    public hideMobileKeyboard() {
+      this._textarea.blur()
+    }
   }
 </script>

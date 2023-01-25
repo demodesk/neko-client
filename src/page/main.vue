@@ -44,8 +44,8 @@
       </div>
       <div class="room-container" style="text-align: center">
         <button
-          v-if="isTouchDevice"
-          @click="showMobileKeyboard"
+          v-if="loaded && isTouchDevice"
+          @click="neko.showMobileKeyboard"
           style="position: absolute; left: 5px; transform: translateY(-100%)"
         >
           <i class="fa fa-keyboard" />
@@ -387,11 +387,6 @@
 
     get isTouchDevice(): boolean {
       return 'ontouchstart' in window || navigator.maxTouchPoints > 0
-    }
-
-    showMobileKeyboard() {
-      // @ts-ignore
-      document.querySelector('textarea.neko-overlay').focus()
     }
 
     dialogOverlayActive = false

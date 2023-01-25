@@ -20,6 +20,7 @@
         :cursorDraw="inactiveCursorDrawFunction"
       />
       <neko-overlay
+        ref="overlay"
         v-show="!private_mode_enabled && state.connection.status != 'disconnected'"
         :style="{ pointerEvents: state.control.locked ? 'none' : 'auto' }"
         :wsControl="control"
@@ -102,6 +103,7 @@
     @Ref('component') readonly _component!: HTMLElement
     @Ref('container') readonly _container!: HTMLElement
     @Ref('video') readonly _video!: HTMLVideoElement
+    @Ref('overlay') readonly _overlay!: Overlay
 
     // fallback image for webrtc reconnections:
     // chrome shows black screen when closing webrtc connection, that's why
@@ -358,6 +360,14 @@
 
     public disconnect() {
       this.connection.close()
+    }
+
+    public showMobileKeyboard() {
+      this._overlay.showMobileKeyboard()
+    }
+
+    public hideMobileKeyboard() {
+      this._overlay.hideMobileKeyboard()
     }
 
     public setReconnectorConfig(type: 'websocket' | 'webrtc', config: ReconnectorConfig) {
