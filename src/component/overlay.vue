@@ -117,6 +117,10 @@
       return 'url(' + uri + ') ' + x + ' ' + y + ', default'
     }
 
+    get isTouchDevice(): boolean {
+      return 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    }
+
     mounted() {
       // register mouseup globally as user can release mouse button outside of overlay
       window.addEventListener('mouseup', this.onMouseUp, true)
@@ -374,7 +378,11 @@
     }
 
     onMouseEnter(e: MouseEvent) {
-      this._textarea.focus()
+      // focus opens the keyboard on mobile (only for android)
+      if (!this.isTouchDevice) {
+        this._textarea.focus()
+      }
+
       this.focused = true
 
       if (this.isControling) {
@@ -631,12 +639,39 @@
       }
     }
 
+    //
+    // mobile keyboard
+    //
+
+    public kbdShow = false
+    public kbdOpen = false
+
     public showMobileKeyboard() {
+      this.kbdShow = true
+      this.kbdOpen = false
+
       this._textarea.focus()
+      window.visualViewport.addEventListener('resize', this.onVisualViewportResize)
     }
 
     public hideMobileKeyboard() {
+      this.kbdShow = false
+      this.kbdOpen = false
+
+      window.visualViewport.removeEventListener('resize', this.onVisualViewportResize)
       this._textarea.blur()
+    }
+
+    // visual viewport resize event is fired when keyboard is opened or closed
+    // android does not blur textarea when keyboard is closed, so we need to do it manually
+    onVisualViewportResize() {
+      if (!this.kbdShow) return
+
+      if (!this.kbdOpen) {
+        this.kbdOpen = true
+      } else {
+        this.hideMobileKeyboard()
+      }
     }
   }
 </script>
