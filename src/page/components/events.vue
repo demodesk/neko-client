@@ -405,7 +405,7 @@
         <td>
           <div class="space-between">
             <span>{{ neko.state.mobile_keyboard_open }}</span>
-            <button title="cut" @click="neko.mobileKeyboardToggle">
+            <button @click="neko.mobileKeyboardToggle">
               <i class="fas fa-toggle-on"></i>
             </button>
           </div>

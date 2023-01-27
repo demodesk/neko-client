@@ -647,6 +647,9 @@
     public kbdOpen = false
 
     public mobileKeyboardShow() {
+      // skip if not a touch device
+      if (!this.isTouchDevice) return
+
       this.kbdShow = true
       this.kbdOpen = false
 
@@ -656,6 +659,9 @@
     }
 
     public mobileKeyboardHide() {
+      // skip if not a touch device
+      if (!this.isTouchDevice) return
+
       this.kbdShow = false
       this.kbdOpen = false
 
