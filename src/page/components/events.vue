@@ -332,9 +332,22 @@
             <button @click="setScreenConfiguration">set</button>
           </td>
         </tr>
+        <tr>
+          <th class="middle">screen.sync</th>
+          <td>
+            <div class="space-between">
+              <span>{{ neko.state.screen.sync }}</span>
+              <button @click="neko.state.screen.sync = !neko.state.screen.sync">
+                <i class="fas fa-toggle-on"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
       </template>
       <tr v-else>
         <th>screen.configurations</th>
+        <td>Session is not admin.</td>
+        <th>screen.sync</th>
         <td>Session is not admin.</td>
       </tr>
 
