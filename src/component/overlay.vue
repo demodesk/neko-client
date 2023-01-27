@@ -646,18 +646,20 @@
     public kbdShow = false
     public kbdOpen = false
 
-    public showMobileKeyboard() {
+    public mobileKeyboardShow() {
       this.kbdShow = true
       this.kbdOpen = false
 
       this._textarea.focus()
       window.visualViewport.addEventListener('resize', this.onVisualViewportResize)
+      this.$emit('mobileKeyboardOpen', true)
     }
 
-    public hideMobileKeyboard() {
+    public mobileKeyboardHide() {
       this.kbdShow = false
       this.kbdOpen = false
 
+      this.$emit('mobileKeyboardOpen', false)
       window.visualViewport.removeEventListener('resize', this.onVisualViewportResize)
       this._textarea.blur()
     }
@@ -670,7 +672,7 @@
       if (!this.kbdOpen) {
         this.kbdOpen = true
       } else {
-        this.hideMobileKeyboard()
+        this.mobileKeyboardHide()
       }
     }
   }
