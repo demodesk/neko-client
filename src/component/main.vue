@@ -36,6 +36,7 @@
         :inactiveCursors="state.settings.inactive_cursors && session.profile.sends_inactive_cursor"
         @updateKeyboardModifiers="updateKeyboardModifiers($event)"
         @uploadDrop="uploadDrop($event)"
+        @mobileKeyboardOpen="state.mobile_keyboard_open = $event"
       />
     </div>
   </div>
@@ -198,6 +199,7 @@
         merciful_reconnect: false,
       },
       cursors: [],
+      mobile_keyboard_open: false,
     } as NekoState
 
     /////////////////////////////
@@ -362,14 +364,6 @@
       this.connection.close()
     }
 
-    public showMobileKeyboard() {
-      this._overlay.showMobileKeyboard()
-    }
-
-    public hideMobileKeyboard() {
-      this._overlay.hideMobileKeyboard()
-    }
-
     public setReconnectorConfig(type: 'websocket' | 'webrtc', config: ReconnectorConfig) {
       if (type != 'websocket' && type != 'webrtc') {
         throw new Error('unknown reconnector type')
@@ -413,6 +407,22 @@
 
     public setKeyboard(layout: string, variant: string = '') {
       Vue.set(this.state.control, 'keyboard', { layout, variant })
+    }
+
+    public mobileKeyboardShow() {
+      this._overlay.mobileKeyboardShow()
+    }
+
+    public mobileKeyboardHide() {
+      this._overlay.mobileKeyboardHide()
+    }
+
+    public mobileKeyboardToggle() {
+      if (this.state.mobile_keyboard_open) {
+        this.mobileKeyboardHide()
+      } else {
+        this.mobileKeyboardShow()
+      }
     }
 
     public setCursorDrawFunction(fn?: CursorDrawFunction) {

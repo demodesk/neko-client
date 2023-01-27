@@ -45,7 +45,7 @@
       <div class="room-container" style="text-align: center">
         <button
           v-if="loaded && isTouchDevice"
-          @click="neko.showMobileKeyboard"
+          @click="neko.mobileKeyboardToggle"
           style="position: absolute; left: 5px; transform: translateY(-100%)"
         >
           <i class="fa fa-keyboard" />
