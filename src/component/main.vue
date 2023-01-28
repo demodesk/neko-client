@@ -592,7 +592,7 @@
       this.syncScreenSizeTimeout = window.setTimeout(() => {
         this.syncScreenSizeTimeout = 0
         const { offsetWidth, offsetHeight } = this._component
-        this.setScreenSize(offsetWidth * window.devicePixelRatio, offsetHeight * window.devicePixelRatio, 60)
+        this.setScreenSize(Math.round(offsetWidth * window.devicePixelRatio), Math.round(offsetHeight * window.devicePixelRatio), 60)
       }, SCREEN_SYNC_THROTTLE)
     }
 
