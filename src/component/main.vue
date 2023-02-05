@@ -653,6 +653,8 @@
       // webrtc
       Vue.set(this.state.connection.webrtc, 'stats', null)
       Vue.set(this.state.connection.webrtc, 'video', null)
+      Vue.set(this.state.connection.webrtc, 'bitrate', null)
+      Vue.set(this.state.connection.webrtc, 'video_auto', false)
       Vue.set(this.state.connection, 'type', 'none')
     }
   }
