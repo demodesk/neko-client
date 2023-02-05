@@ -166,8 +166,11 @@
       <tr>
         <th>connection.webrtc.video_auto</th>
         <td>
-          <select :value="neko.state.connection.webrtc.video_auto" @input="neko.setWebRTCVideo('', Number(0), $event.target.value == 'true')">
-            <option v-for="val in ['true','false']" :key="val" :value="val">
+          <select
+            :value="neko.state.connection.webrtc.video_auto"
+            @input="neko.setWebRTCVideo('', Number(0), $event.target.value == 'true')"
+          >
+            <option v-for="val in ['true', 'false']" :key="val" :value="val">
               {{ val }}
             </option>
           </select>

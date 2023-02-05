@@ -100,6 +100,7 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
     if (video != '' && !this._state.webrtc.videos.includes(video)) {
       throw new Error('video id not found')
     }
+
     this.websocket.send(EVENT.SIGNAL_VIDEO, { video, bitrate, video_auto })
   }
 
