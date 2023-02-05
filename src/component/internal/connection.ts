@@ -5,7 +5,7 @@ import * as EVENT from '../types/events'
 import { NekoWebSocket } from './websocket'
 import { NekoLoggerFactory } from './logger'
 import { NekoWebRTC } from './webrtc'
-import { Connection } from '../types/state'
+import { Connection, WebRTCStats } from '../types/state'
 
 import { Reconnector } from './reconnector'
 import { WebsocketReconnector } from './reconnector/websocket'
@@ -31,6 +31,7 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
   private _onConnectHandle: () => void
   private _onDisconnectHandle: () => void
   private _onCloseHandle: (error?: Error) => void
+  private _webrtcStatsHandle: (stats: WebRTCStats) => void
   private _webrtcStableHandle: (isStable: boolean) => void
 
   // eslint-disable-next-line
@@ -84,6 +85,12 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       Vue.set(this._state.webrtc, 'stable', isStable)
     }
     this.webrtc.on('stable', this._webrtcStableHandle)
+
+    // synchronize webrtc stats with global state
+    this._webrtcStatsHandle = (stats: WebRTCStats) => {
+      Vue.set(this._state.webrtc, 'stats', stats)
+    }
+    this.webrtc.on('stats', this._webrtcStatsHandle)
   }
 
   public get activated() {
@@ -151,7 +158,7 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
   public destroy() {
     this.logger.destroy()
 
-    // TODO: Use server side congestion control.
+    this.webrtc.off('stats', this._webrtcStatsHandle)
     this.webrtc.off('stable', this._webrtcStableHandle)
 
     // unbind events from all reconnectors
