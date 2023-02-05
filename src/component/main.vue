@@ -345,7 +345,7 @@
       }
     }
 
-    public connect(video?: string) {
+    public connect(video?: string, bitrate?: number, video_auto?: boolean) {
       if (!this.state.authenticated) {
         throw new Error('client not authenticated')
       }
@@ -354,7 +354,7 @@
         throw new Error('client is already connected')
       }
 
-      this.connection.open(video)
+      this.connection.open(video, bitrate, video_auto)
     }
 
     public disconnect() {

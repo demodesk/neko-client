@@ -115,7 +115,7 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
     return this.logger.new(scope)
   }
 
-  public open(video?: string) {
+  public open(video?: string, bitrate?: number, video_auto?: boolean) {
     if (this._open) {
       throw new Error('connection already open')
     }
@@ -128,6 +128,17 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       }
 
       Vue.set(this._state.webrtc, 'video', video)
+    }
+
+    if (bitrate) {
+      Vue.set(this._state.webrtc, 'bitrate', bitrate)
+    }
+
+    if (video_auto) {
+      Vue.set(this._state.webrtc, 'video_auto', video_auto)
+    } else {
+      // default to true
+      Vue.set(this._state.webrtc, 'video_auto', true)
     }
 
     Vue.set(this._state, 'status', 'connecting')
