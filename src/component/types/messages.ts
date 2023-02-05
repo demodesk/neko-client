@@ -9,7 +9,6 @@ export interface SystemSettings extends Settings {}
 
 export interface SystemWebRTC {
   videos: string[]
-  video_auto: boolean
 }
 
 export interface SystemInit {
@@ -46,7 +45,9 @@ export interface SystemDisconnect {
 export interface SignalProvide {
   sdp: string
   iceservers: ICEServer[]
+  // use SignalVideo instead
   video: string
+  bitrate: number
   video_auto: boolean
 }
 

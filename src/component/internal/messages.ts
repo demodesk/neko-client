@@ -106,7 +106,6 @@ export class NekoMessages extends EventEmitter<NekoEvents> {
     Vue.set(this._state, 'session_id', conf.session_id)
     Vue.set(this._state.connection, 'screencast', conf.screencast_enabled)
     Vue.set(this._state.connection.webrtc, 'videos', conf.webrtc.videos)
-    Vue.set(this._state.connection.webrtc, 'video_auto', conf.webrtc.video_auto)
 
     for (const id in conf.sessions) {
       this[EVENT.SESSION_CREATED](conf.sessions[id])
@@ -148,9 +147,10 @@ export class NekoMessages extends EventEmitter<NekoEvents> {
   // Signal Events
   /////////////////////////////
 
-  protected async [EVENT.SIGNAL_PROVIDE]({ sdp, video, video_auto, iceservers }: message.SignalProvide) {
+  protected async [EVENT.SIGNAL_PROVIDE]({ sdp, video, video_auto, bitrate, iceservers }: message.SignalProvide) {
     this._localLog.debug(`EVENT.SIGNAL_PROVIDE`)
     Vue.set(this._state.connection.webrtc, 'video', video)
+    Vue.set(this._state.connection.webrtc, 'bitrate', bitrate)
     Vue.set(this._state.connection.webrtc, 'video_auto', video_auto)
 
     // create WebRTC connection
