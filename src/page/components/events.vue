@@ -110,6 +110,20 @@
               <td>{{ Math.floor(neko.state.connection.webrtc.stats.bitrate / 1024 / 8) }} KB/s</td>
             </tr>
             <tr>
+              <th style="width: 40%">latency</th>
+              <td
+                :title="
+                  'request: ' +
+                  neko.state.connection.webrtc.stats.requestLatency +
+                  'ms, response: ' +
+                  neko.state.connection.webrtc.stats.responseLatency +
+                  'ms'
+                "
+              >
+                {{ neko.state.connection.webrtc.stats.latency }}ms
+              </td>
+            </tr>
+            <tr>
               <th>loss</th>
               <td :style="neko.state.connection.webrtc.stats.packetLoss >= 1 ? 'background: red' : ''">
                 {{ Math.floor(neko.state.connection.webrtc.stats.packetLoss) }}%
@@ -397,6 +411,18 @@
       <tr>
         <th>cursors</th>
         <td>{{ neko.state.cursors }}</td>
+      </tr>
+
+      <tr>
+        <th>mobile_keyboard_open</th>
+        <td>
+          <div class="space-between">
+            <span>{{ neko.state.mobile_keyboard_open }}</span>
+            <button @click="neko.mobileKeyboardToggle">
+              <i class="fas fa-toggle-on"></i>
+            </button>
+          </div>
+        </td>
       </tr>
 
       <tr>
