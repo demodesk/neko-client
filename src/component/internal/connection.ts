@@ -36,6 +36,7 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
   private _onConnectHandle: () => void
   private _onDisconnectHandle: () => void
   private _onCloseHandle: (error?: Error) => void
+
   private _webrtcStatsHandle: (stats: WebRTCStats) => void
   private _webrtcStableHandle: (isStable: boolean) => void
   private _webrtcCongestionControlHandle: (stats: WebRTCStats) => void
@@ -85,6 +86,18 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       r.on('disconnect', this._onDisconnectHandle)
       r.on('close', this._onCloseHandle)
     })
+
+    // synchronize webrtc stats with global state
+    this._webrtcStatsHandle = (stats: WebRTCStats) => {
+      Vue.set(this._state.webrtc, 'stats', stats)
+    }
+    this.webrtc.on('stats', this._webrtcStatsHandle)
+
+    // synchronize webrtc stable with global state
+    this._webrtcStableHandle = (isStable: boolean) => {
+      Vue.set(this._state.webrtc, 'stable', isStable)
+    }
+    this.webrtc.on('stable', this._webrtcStableHandle)
 
     //
     // TODO: Use server side congestion control.
@@ -146,18 +159,6 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       }
     }
     this.webrtc.on('stats', this._webrtcCongestionControlHandle)
-
-    // synchronize webrtc stable with global state
-    this._webrtcStableHandle = (isStable: boolean) => {
-      Vue.set(this._state.webrtc, 'stable', isStable)
-    }
-    this.webrtc.on('stable', this._webrtcStableHandle)
-
-    // synchronize webrtc stats with global state
-    this._webrtcStatsHandle = (stats: WebRTCStats) => {
-      Vue.set(this._state.webrtc, 'stats', stats)
-    }
-    this.webrtc.on('stats', this._webrtcStatsHandle)
   }
 
   public get activated() {
