@@ -202,11 +202,11 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       Vue.set(this._state.webrtc, 'bitrate', bitrate)
     }
 
-    if (video_auto) {
-      Vue.set(this._state.webrtc, 'video_auto', video_auto)
-    } else {
-      // default to true
+    // default to true
+    if (typeof video_auto === 'undefined') {
       Vue.set(this._state.webrtc, 'video_auto', true)
+    } else {
+      Vue.set(this._state.webrtc, 'video_auto', video_auto)
     }
 
     Vue.set(this._state, 'status', 'connecting')
