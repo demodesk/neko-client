@@ -437,6 +437,14 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
       this._track = event.track
     }
 
+    // https://henbos.github.io/webrtc-timing/#dom-rtcrtpreceiver-playoutdelayhint
+    //@ts-ignore
+    if ('playoutDelayHint' in event.receiver) {
+      // @ts-ignore
+      event.receiver.playoutDelayHint = 0
+      this._log.info(`playoutDelayHint set to 0`, { label: event.track.label })
+    }
+
     this.emit('track', event)
   }
 
