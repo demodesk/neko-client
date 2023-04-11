@@ -205,10 +205,7 @@
       this.cursorElement.onload = null
 
       // stop inactive cursor interval if exists
-      if (this.inactiveCursorInterval !== null) {
-        window.clearInterval(this.inactiveCursorInterval)
-        this.inactiveCursorInterval = null
-      }
+      this.clearInactiveCursorInterval()
     }
 
     getMousePos(clientX: number, clientY: number) {
@@ -433,15 +430,19 @@
     private inactiveCursorInterval: number | null = null
     private inactiveCursorPosition: CursorPosition | null = null
 
+    clearInactiveCursorInterval() {
+      if (this.inactiveCursorInterval) {
+        window.clearInterval(this.inactiveCursorInterval)
+        this.inactiveCursorInterval = null
+      }
+    }
+
     @Watch('focused')
     @Watch('isControling')
     @Watch('inactiveCursors')
     restartInactiveCursorInterval() {
       // clear interval if exists
-      if (this.inactiveCursorInterval !== null) {
-        window.clearInterval(this.inactiveCursorInterval)
-        this.inactiveCursorInterval = null
-      }
+      this.clearInactiveCursorInterval()
 
       if (this.inactiveCursors && this.focused && !this.isControling) {
         this.inactiveCursorInterval = window.setInterval(this.sendInactiveMousePos.bind(this), INACTIVE_CURSOR_INTERVAL)
@@ -450,11 +451,11 @@
 
     saveInactiveMousePos(e: MouseEvent) {
       const pos = this.getMousePos(e.clientX, e.clientY)
-      Vue.set(this, 'inactiveCursorPosition', pos)
+      this.inactiveCursorPosition = pos
     }
 
     sendInactiveMousePos() {
-      if (this.inactiveCursorPosition != null) {
+      if (this.inactiveCursorPosition) {
         this.webrtc.send('mousemove', this.inactiveCursorPosition)
       }
     }
@@ -654,7 +655,7 @@
       this.kbdOpen = false
 
       this._textarea.focus()
-      window.visualViewport.addEventListener('resize', this.onVisualViewportResize)
+      window.visualViewport?.addEventListener('resize', this.onVisualViewportResize)
       this.$emit('mobileKeyboardOpen', true)
     }
 
@@ -666,7 +667,7 @@
       this.kbdOpen = false
 
       this.$emit('mobileKeyboardOpen', false)
-      window.visualViewport.removeEventListener('resize', this.onVisualViewportResize)
+      window.visualViewport?.removeEventListener('resize', this.onVisualViewportResize)
       this._textarea.blur()
     }
 
