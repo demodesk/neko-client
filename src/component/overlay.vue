@@ -60,7 +60,8 @@
 
   const CANVAS_SCALE = 2
 
-  const INACTIVE_CURSOR_INTERVAL = 250 // ms
+  const MOUSE_MOVE_THROTTLE = 1000 / 60 // in ms, 60fps
+  const INACTIVE_CURSOR_INTERVAL = 1000 / 4 // in ms, 4fps
 
   @Component({
     name: 'neko-overlay',
@@ -324,7 +325,13 @@
       }
     }
 
+    lastMouseMove = 0
+
     onMouseMove(e: MouseEvent) {
+      // throttle mousemove events
+      if (e.timeStamp - this.lastMouseMove < MOUSE_MOVE_THROTTLE) return
+      this.lastMouseMove = e.timeStamp
+
       if (this.isControling) {
         this.sendMousePos(e)
       }
