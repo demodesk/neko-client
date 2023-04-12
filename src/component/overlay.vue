@@ -221,7 +221,7 @@
     sendMousePos(e: MouseEvent) {
       const pos = this.getMousePos(e.clientX, e.clientY)
       this.webrtc.send('mousemove', pos)
-      Vue.set(this, 'cursorPosition', pos)
+      this.cursorPosition = pos
     }
 
     private wheelX = 0
@@ -397,10 +397,10 @@
     onMouseLeave(e: MouseEvent) {
       if (this.isControling) {
         // save current keyboard modifiers state
-        Vue.set(this, 'keyboardModifiers', {
+        this.keyboardModifiers = {
           capslock: e.getModifierState('CapsLock'),
           numlock: e.getModifierState('NumLock'),
-        })
+        }
       }
 
       this.focused = false
@@ -503,13 +503,13 @@
 
     onCursorPosition(data: CursorPosition) {
       if (!this.isControling) {
-        Vue.set(this, 'cursorPosition', data)
+        this.cursorPosition = data
         this.canvasRequestRedraw()
       }
     }
 
     onCursorImage(data: CursorImage) {
-      Vue.set(this, 'cursorImage', data)
+      this.cursorImage = data
 
       if (!this.isControling) {
         this.cursorElement.src = data.uri
@@ -611,7 +611,7 @@
 
     @Watch('isControling')
     onControlChange(isControling: boolean) {
-      Vue.set(this, 'keyboardModifiers', null)
+      this.keyboardModifiers = null
 
       if (isControling && this.reqMouseDown) {
         this.updateKeyboardModifiers(this.reqMouseDown)
