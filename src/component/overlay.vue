@@ -226,7 +226,7 @@
 
     private wheelX = 0
     private wheelY = 0
-    private wheelDate = Date.now()
+    private wheelTimeStamp = 0
 
     // negative sensitivity can be acheived using increased step value
     get wheelStep() {
@@ -268,13 +268,13 @@
         return
       }
 
-      const now = Date.now()
-      const firstScroll = now - this.wheelDate > 250
+      // when the last scroll was more than 250ms ago
+      const firstScroll = e.timeStamp - this.wheelTimeStamp > 250
 
       if (firstScroll) {
         this.wheelX = 0
         this.wheelY = 0
-        this.wheelDate = now
+        this.wheelTimeStamp = e.timeStamp
       }
 
       let dx = e.deltaX
