@@ -55,6 +55,9 @@
     @Prop()
     private readonly cursorDraw!: InactiveCursorDrawFunction | null
 
+    @Prop()
+    private readonly fps!: number
+
     mounted() {
       // get canvas overlay context
       const ctx = this._overlay.getContext('2d')
@@ -97,8 +100,14 @@
       // request another frame
       if (this._percent <= 1) window.requestAnimationFrame(this.canvasAnimateFrame)
 
-      // calculate factor
-      const delta = (now - this._last_animation_time) / POS_INTERVAL_MS
+      // calc elapsed time since last loop
+      const elapsed = now - this._last_animation_time
+
+      // skip if fps is set and elapsed time is less than fps
+      if (this.fps > 0 && elapsed < 1000 / this.fps) return
+
+      // calc current animation progress
+      const delta = elapsed / POS_INTERVAL_MS
       this._last_animation_time = now
 
       // skip very first delta to prevent jumping

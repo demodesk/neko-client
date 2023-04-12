@@ -109,6 +109,9 @@
     @Prop()
     private readonly inactiveCursors!: boolean
 
+    @Prop()
+    private readonly fps!: number
+
     get cursor(): string {
       if (!this.isControling || !this.cursorImage) {
         return 'default'
@@ -493,7 +496,9 @@
     private cursorImage: CursorImage | null = null
     private cursorElement: HTMLImageElement = new Image()
     private cursorPosition: CursorPosition | null = null
+    private cursorLastTime = 0
     private canvasRequestedFrame = false
+    private canvasRenderTimeout: number | null = null
 
     @Watch('canvasSize')
     onCanvasSizeChange({ width, height }: Dimension) {
@@ -527,6 +532,23 @@
     canvasRequestRedraw() {
       // skip rendering if there is already in progress
       if (this.canvasRequestedFrame) return
+
+      // throttle rendering according to fps
+      if (this.fps > 0) {
+        if (this.canvasRenderTimeout) {
+          window.clearTimeout(this.canvasRenderTimeout)
+          this.canvasRenderTimeout = null
+        }
+
+        const now = Date.now()
+        if (now - this.cursorLastTime < 1000 / this.fps) {
+          // ensure that last frame is rendered
+          this.canvasRenderTimeout = window.setTimeout(this.canvasRequestRedraw, 1000 / this.fps)
+          return
+        }
+
+        this.cursorLastTime = now
+      }
 
       // request animation frame from a browser
       this.canvasRequestedFrame = true
