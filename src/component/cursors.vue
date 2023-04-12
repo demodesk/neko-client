@@ -20,7 +20,6 @@
   import { InactiveCursorDrawFunction, Dimension } from './types/cursors'
   import { getMovementXYatPercent } from './utils/canvas-movement'
 
-  const CANVAS_SCALE = 2
   // How often are position data arriving
   const POS_INTERVAL_MS = 750
   // How many pixel change is considered as movement
@@ -32,6 +31,8 @@
   export default class extends Vue {
     @Ref('overlay') readonly _overlay!: HTMLCanvasElement
     private _ctx!: CanvasRenderingContext2D
+
+    private canvasScale = window.devicePixelRatio
 
     @Prop()
     private readonly sessions!: Record<string, Session>
@@ -78,9 +79,9 @@
     }
 
     canvasResize({ width, height }: Dimension) {
-      this._overlay.width = width * CANVAS_SCALE
-      this._overlay.height = height * CANVAS_SCALE
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._overlay.width = width * this.canvasScale
+      this._overlay.height = height * this.canvasScale
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
     }
 
     // start as undefined to prevent jumping
@@ -208,7 +209,7 @@
       y = Math.round((y / this.screenSize.height) * height)
 
       // reset transformation, X and Y will be 0 again
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
 
       // use custom draw function, if available
       if (this.cursorDraw) {
@@ -234,7 +235,7 @@
 
     canvasClear() {
       // reset transformation, X and Y will be 0 again
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
 
       const { width, height } = this._overlay
       this._ctx.clearRect(0, 0, width, height)
