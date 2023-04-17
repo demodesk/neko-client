@@ -35,8 +35,8 @@
         :cursorDraw="cursorDrawFunction"
         :implicitControl="state.settings.implicit_hosting && session.profile.can_host"
         :inactiveCursors="state.settings.inactive_cursors && session.profile.sends_inactive_cursor"
-        :hasMobileKeyboard="is_touch_device"
         :fps="fps"
+        :hasMobileKeyboard="is_touch_device"
         @updateKeyboardModifiers="updateKeyboardModifiers($event)"
         @uploadDrop="uploadDrop($event)"
         @mobileKeyboardOpen="state.mobile_keyboard_open = $event"
@@ -242,15 +242,11 @@
     }
 
     public get is_touch_device() {
-      if (this.inputMode == 'mouse') {
-        return false
-      }
-      if (this.inputMode == 'touch') {
-        return true
-      }
+      if (this.inputMode == 'mouse') return false
+      if (this.inputMode == 'touch') return true
 
       return (
-        // we assume that if the device has touch support, it is a mobile device
+        // check if the device has a touch screen
         ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
         // we also check if the device has a pointer
         !matchMedia('(pointer:fine)').matches &&
