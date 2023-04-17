@@ -121,8 +121,11 @@
       return 'url(' + uri + ') ' + x + ' ' + y + ', default'
     }
 
-    get isTouchDevice(): boolean {
-      return 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    get hasMobileKeyboard(): boolean {
+      // we assume that if the device has touch support, it is a mobile device
+      return 'ontouchstart' in window && navigator.maxTouchPoints > 0 &&
+        // we also check if the device has a mouse, it is probably a laptop
+        !matchMedia('(pointer:fine)').matches && !matchMedia('(hover:hover)').matches
     }
 
     mounted() {
@@ -386,7 +389,7 @@
 
     onMouseEnter(e: MouseEvent) {
       // focus opens the keyboard on mobile (only for android)
-      if (!this.isTouchDevice) {
+      if (!this.hasMobileKeyboard) {
         this._textarea.focus()
       }
 
@@ -678,7 +681,7 @@
 
     public mobileKeyboardShow() {
       // skip if not a touch device
-      if (!this.isTouchDevice) return
+      if (!this.hasMobileKeyboard) return
 
       this.kbdShow = true
       this.kbdOpen = false
@@ -690,7 +693,7 @@
 
     public mobileKeyboardHide() {
       // skip if not a touch device
-      if (!this.isTouchDevice) return
+      if (!this.hasMobileKeyboard) return
 
       this.kbdShow = false
       this.kbdOpen = false
