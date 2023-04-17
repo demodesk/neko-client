@@ -112,6 +112,9 @@
     @Prop()
     private readonly fps!: number
 
+    @Prop()
+    private readonly hasMobileKeyboard!: boolean
+
     get cursor(): string {
       if (!this.isControling || !this.cursorImage) {
         return 'default'
@@ -119,13 +122,6 @@
 
       const { uri, x, y } = this.cursorImage
       return 'url(' + uri + ') ' + x + ' ' + y + ', default'
-    }
-
-    get hasMobileKeyboard(): boolean {
-      // we assume that if the device has touch support, it is a mobile device
-      return 'ontouchstart' in window && navigator.maxTouchPoints > 0 &&
-        // we also check if the device has a mouse, it is probably a laptop
-        !matchMedia('(pointer:fine)').matches && !matchMedia('(hover:hover)').matches
     }
 
     mounted() {
