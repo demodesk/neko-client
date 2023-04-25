@@ -13,6 +13,9 @@
       @mousedown.stop.prevent="onMouseDown"
       @mouseenter.stop.prevent="onMouseEnter"
       @mouseleave.stop.prevent="onMouseLeave"
+      @touchmove.stop.prevent="onTouchHandler"
+      @touchstart.stop.prevent="onTouchHandler"
+      @touchend.stop.prevent="onTouchHandler"
       @dragenter.stop.prevent="onDragEnter"
       @dragleave.stop.prevent="onDragLeave"
       @dragover.stop.prevent="onDragOver"
@@ -414,6 +417,35 @@
       }
 
       this.focused = false
+    }
+
+    onTouchHandler(e: TouchEvent) {
+      const first = e.changedTouches[0]
+
+      let type = ''
+      switch (e.type) {
+        case 'touchstart':
+          type = 'mousedown'
+          break
+        case 'touchmove':
+          type = 'mousemove'
+          break
+        case 'touchend':
+          type = 'mouseup'
+          break
+        default:
+          return
+      }
+
+      first.target.dispatchEvent(new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        screenX: first.screenX,
+        screenY: first.screenY,
+        clientX: first.clientX,
+        clientY: first.clientY,
+      }))
     }
 
     onDragEnter(e: DragEvent) {
