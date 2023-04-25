@@ -13,9 +13,6 @@
       @mousedown.stop.prevent="onMouseDown"
       @mouseenter.stop.prevent="onMouseEnter"
       @mouseleave.stop.prevent="onMouseLeave"
-      @touchmove.stop.prevent="onTouchHandler"
-      @touchstart.stop.prevent="onTouchHandler"
-      @touchend.stop.prevent="onTouchHandler"
       @dragenter.stop.prevent="onDragEnter"
       @dragleave.stop.prevent="onDragLeave"
       @dragover.stop.prevent="onDragOver"
@@ -195,6 +192,10 @@
       }
       this.keyboard.listenTo(this._textarea)
 
+      this._textarea.addEventListener('touchstart', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchmove', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchend', this.onTouchHandler, { passive: false })
+
       this.webrtc.addListener('cursor-position', this.onCursorPosition)
       this.webrtc.addListener('cursor-image', this.onCursorImage)
       this.webrtc.addListener('disconnected', this.canvasClear)
@@ -208,6 +209,10 @@
         this.keyboard.removeListener()
       }
 
+      this._textarea.removeEventListener('touchstart', this.onTouchHandler)
+      this._textarea.removeEventListener('touchmove', this.onTouchHandler)
+      this._textarea.removeEventListener('touchend', this.onTouchHandler)
+
       this.webrtc.removeListener('cursor-position', this.onCursorPosition)
       this.webrtc.removeListener('cursor-image', this.onCursorImage)
       this.webrtc.removeListener('disconnected', this.canvasClear)
@@ -220,6 +225,40 @@
       if (this.unsubscribePixelRatioChange) {
         this.unsubscribePixelRatioChange()
       }
+    }
+
+    onTouchHandler(e: TouchEvent) {
+      let type = ''
+      switch (e.type) {
+        case 'touchstart':
+          type = 'mousedown'
+          break
+        case 'touchmove':
+          type = 'mousemove'
+          break
+        case 'touchend':
+          type = 'mouseup'
+          break
+        default:
+          return
+      }
+
+      for (const touch of e.changedTouches) {
+        touch.target.dispatchEvent(
+          new MouseEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            screenX: touch.screenX,
+            screenY: touch.screenY,
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+          }),
+        )
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
     }
 
     getMousePos(clientX: number, clientY: number) {
@@ -417,35 +456,6 @@
       }
 
       this.focused = false
-    }
-
-    onTouchHandler(e: TouchEvent) {
-      const first = e.changedTouches[0]
-
-      let type = ''
-      switch (e.type) {
-        case 'touchstart':
-          type = 'mousedown'
-          break
-        case 'touchmove':
-          type = 'mousemove'
-          break
-        case 'touchend':
-          type = 'mouseup'
-          break
-        default:
-          return
-      }
-
-      first.target.dispatchEvent(new MouseEvent(type, {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        screenX: first.screenX,
-        screenY: first.screenY,
-        clientX: first.clientX,
-        clientY: first.clientY,
-      }))
     }
 
     onDragEnter(e: DragEvent) {
