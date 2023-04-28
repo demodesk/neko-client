@@ -240,22 +240,18 @@
           type = 'mouseup'
           break
         default:
+          // unknown event
           return
       }
 
-      for (const touch of e.changedTouches) {
-        touch.target.dispatchEvent(
-          new MouseEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-            screenX: touch.screenX,
-            screenY: touch.screenY,
-            clientX: touch.clientX,
-            clientY: touch.clientY,
-          }),
-        )
-      }
+      const touch = e.changedTouches[0]
+      touch.target.dispatchEvent(
+        new MouseEvent(type, {
+          button: 0, // currently only left button is supported
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        }),
+      )
 
       e.preventDefault()
       e.stopPropagation()
