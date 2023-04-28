@@ -205,8 +205,8 @@
         sync: {
           enabled: false,
           multiplier: 0,
-          rate: 60,
-        }
+          rate: 30,
+        },
       },
       session_id: null,
       sessions: {},
@@ -611,7 +611,7 @@
 
     @Watch('state.screen.sync.enabled')
     onScreenSyncChange() {
-      if (this.state.screen.sync) {
+      if (this.state.screen.sync.enabled) {
         this.syncScreenSize()
         window.addEventListener('resize', this.syncScreenSize)
       } else {
