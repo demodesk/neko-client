@@ -20,7 +20,6 @@
   import { InactiveCursorDrawFunction, Dimension } from './types/cursors'
   import { getMovementXYatPercent } from './utils/canvas-movement'
 
-  const CANVAS_SCALE = 2
   // How often are position data arriving
   const POS_INTERVAL_MS = 750
   // How many pixel change is considered as movement
@@ -32,6 +31,8 @@
   export default class extends Vue {
     @Ref('overlay') readonly _overlay!: HTMLCanvasElement
     private _ctx!: CanvasRenderingContext2D
+
+    private canvasScale = window.devicePixelRatio
 
     @Prop()
     private readonly sessions!: Record<string, Session>
@@ -54,6 +55,9 @@
     @Prop()
     private readonly cursorDraw!: InactiveCursorDrawFunction | null
 
+    @Prop()
+    private readonly fps!: number
+
     mounted() {
       // get canvas overlay context
       const ctx = this._overlay.getContext('2d')
@@ -65,11 +69,35 @@
       const { width, height } = this._overlay.getBoundingClientRect()
       this.canvasResize({ width, height })
 
+      // react to pixel ratio changes
+      this.onPixelRatioChange()
+
       // store last drawing points
       this._last_points = {}
     }
 
-    beforeDestroy() {}
+    beforeDestroy() {
+      // stop pixel ratio change listener
+      if (this.unsubscribePixelRatioChange) {
+        this.unsubscribePixelRatioChange()
+      }
+    }
+
+    private unsubscribePixelRatioChange?: () => void
+    private onPixelRatioChange() {
+      if (this.unsubscribePixelRatioChange) {
+        this.unsubscribePixelRatioChange()
+      }
+
+      const media = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
+      media.addEventListener('change', this.onPixelRatioChange)
+      this.unsubscribePixelRatioChange = () => {
+        media.removeEventListener('change', this.onPixelRatioChange)
+      }
+
+      this.canvasScale = window.devicePixelRatio
+      this.onCanvasSizeChange(this.canvasSize)
+    }
 
     @Watch('canvasSize')
     onCanvasSizeChange({ width, height }: Dimension) {
@@ -78,9 +106,9 @@
     }
 
     canvasResize({ width, height }: Dimension) {
-      this._overlay.width = width * CANVAS_SCALE
-      this._overlay.height = height * CANVAS_SCALE
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._overlay.width = width * this.canvasScale
+      this._overlay.height = height * this.canvasScale
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
     }
 
     // start as undefined to prevent jumping
@@ -96,8 +124,14 @@
       // request another frame
       if (this._percent <= 1) window.requestAnimationFrame(this.canvasAnimateFrame)
 
-      // calculate factor
-      const delta = (now - this._last_animation_time) / POS_INTERVAL_MS
+      // calc elapsed time since last loop
+      const elapsed = now - this._last_animation_time
+
+      // skip if fps is set and elapsed time is less than fps
+      if (this.fps > 0 && elapsed < 1000 / this.fps) return
+
+      // calc current animation progress
+      const delta = elapsed / POS_INTERVAL_MS
       this._last_animation_time = now
 
       // skip very first delta to prevent jumping
@@ -203,12 +237,12 @@
 
     canvasDrawCursor(x: number, y: number, id: string) {
       // get intrinsic dimensions
-      let { width, height } = this.canvasSize
+      const { width, height } = this.canvasSize
       x = Math.round((x / this.screenSize.width) * width)
       y = Math.round((y / this.screenSize.height) * height)
 
       // reset transformation, X and Y will be 0 again
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
 
       // use custom draw function, if available
       if (this.cursorDraw) {
@@ -234,9 +268,9 @@
 
     canvasClear() {
       // reset transformation, X and Y will be 0 again
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
 
-      const { width, height } = this._overlay
+      const { width, height } = this.canvasSize
       this._ctx.clearRect(0, 0, width, height)
     }
   }

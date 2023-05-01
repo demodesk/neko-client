@@ -58,9 +58,8 @@
   const WHEEL_STEP = 53 // Delta threshold for a mouse wheel step
   const WHEEL_LINE_HEIGHT = 19
 
-  const CANVAS_SCALE = 2
-
-  const INACTIVE_CURSOR_INTERVAL = 250 // ms
+  const MOUSE_MOVE_THROTTLE = 1000 / 60 // in ms, 60fps
+  const INACTIVE_CURSOR_INTERVAL = 1000 / 4 // in ms, 4fps
 
   @Component({
     name: 'neko-overlay',
@@ -69,6 +68,8 @@
     @Ref('overlay') readonly _overlay!: HTMLCanvasElement
     @Ref('textarea') readonly _textarea!: HTMLTextAreaElement
     private _ctx!: CanvasRenderingContext2D
+
+    private canvasScale = window.devicePixelRatio
 
     private keyboard!: KeyboardInterface
     private textInput = ''
@@ -108,6 +109,12 @@
     @Prop()
     private readonly inactiveCursors!: boolean
 
+    @Prop()
+    private readonly fps!: number
+
+    @Prop()
+    private readonly hasMobileKeyboard!: boolean
+
     get cursor(): string {
       if (!this.isControling || !this.cursorImage) {
         return 'default'
@@ -115,10 +122,6 @@
 
       const { uri, x, y } = this.cursorImage
       return 'url(' + uri + ') ' + x + ' ' + y + ', default'
-    }
-
-    get isTouchDevice(): boolean {
-      return 'ontouchstart' in window || navigator.maxTouchPoints > 0
     }
 
     mounted() {
@@ -134,6 +137,9 @@
       // synchronize intrinsic with extrinsic dimensions
       const { width, height } = this._overlay.getBoundingClientRect()
       this.canvasResize({ width, height })
+
+      // react to pixel ratio changes
+      this.onPixelRatioChange()
 
       let ctrlKey = 0
       let noKeyUp = {} as Record<number, boolean>
@@ -186,6 +192,10 @@
       }
       this.keyboard.listenTo(this._textarea)
 
+      this._textarea.addEventListener('touchstart', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchmove', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchend', this.onTouchHandler, { passive: false })
+
       this.webrtc.addListener('cursor-position', this.onCursorPosition)
       this.webrtc.addListener('cursor-image', this.onCursorImage)
       this.webrtc.addListener('disconnected', this.canvasClear)
@@ -199,16 +209,52 @@
         this.keyboard.removeListener()
       }
 
+      this._textarea.removeEventListener('touchstart', this.onTouchHandler)
+      this._textarea.removeEventListener('touchmove', this.onTouchHandler)
+      this._textarea.removeEventListener('touchend', this.onTouchHandler)
+
       this.webrtc.removeListener('cursor-position', this.onCursorPosition)
       this.webrtc.removeListener('cursor-image', this.onCursorImage)
       this.webrtc.removeListener('disconnected', this.canvasClear)
       this.cursorElement.onload = null
 
       // stop inactive cursor interval if exists
-      if (this.inactiveCursorInterval !== null) {
-        window.clearInterval(this.inactiveCursorInterval)
-        this.inactiveCursorInterval = null
+      this.clearInactiveCursorInterval()
+
+      // stop pixel ratio change listener
+      if (this.unsubscribePixelRatioChange) {
+        this.unsubscribePixelRatioChange()
       }
+    }
+
+    onTouchHandler(e: TouchEvent) {
+      let type = ''
+      switch (e.type) {
+        case 'touchstart':
+          type = 'mousedown'
+          break
+        case 'touchmove':
+          type = 'mousemove'
+          break
+        case 'touchend':
+          type = 'mouseup'
+          break
+        default:
+          // unknown event
+          return
+      }
+
+      const touch = e.changedTouches[0]
+      touch.target.dispatchEvent(
+        new MouseEvent(type, {
+          button: 0, // currently only left button is supported
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        }),
+      )
+
+      e.preventDefault()
+      e.stopPropagation()
     }
 
     getMousePos(clientX: number, clientY: number) {
@@ -223,12 +269,12 @@
     sendMousePos(e: MouseEvent) {
       const pos = this.getMousePos(e.clientX, e.clientY)
       this.webrtc.send('mousemove', pos)
-      Vue.set(this, 'cursorPosition', pos)
+      this.cursorPosition = pos
     }
 
     private wheelX = 0
     private wheelY = 0
-    private wheelDate = Date.now()
+    private wheelTimeStamp = 0
 
     // negative sensitivity can be acheived using increased step value
     get wheelStep() {
@@ -270,13 +316,13 @@
         return
       }
 
-      const now = Date.now()
-      const firstScroll = now - this.wheelDate > 250
+      // when the last scroll was more than 250ms ago
+      const firstScroll = e.timeStamp - this.wheelTimeStamp > 250
 
       if (firstScroll) {
         this.wheelX = 0
         this.wheelY = 0
-        this.wheelDate = now
+        this.wheelTimeStamp = e.timeStamp
       }
 
       let dx = e.deltaX
@@ -327,7 +373,13 @@
       }
     }
 
+    lastMouseMove = 0
+
     onMouseMove(e: MouseEvent) {
+      // throttle mousemove events
+      if (e.timeStamp - this.lastMouseMove < MOUSE_MOVE_THROTTLE) return
+      this.lastMouseMove = e.timeStamp
+
       if (this.isControling) {
         this.sendMousePos(e)
       }
@@ -379,7 +431,7 @@
 
     onMouseEnter(e: MouseEvent) {
       // focus opens the keyboard on mobile (only for android)
-      if (!this.isTouchDevice) {
+      if (!this.hasMobileKeyboard) {
         this._textarea.focus()
       }
 
@@ -393,10 +445,10 @@
     onMouseLeave(e: MouseEvent) {
       if (this.isControling) {
         // save current keyboard modifiers state
-        Vue.set(this, 'keyboardModifiers', {
+        this.keyboardModifiers = {
           capslock: e.getModifierState('CapsLock'),
           numlock: e.getModifierState('NumLock'),
-        })
+        }
       }
 
       this.focused = false
@@ -433,15 +485,19 @@
     private inactiveCursorInterval: number | null = null
     private inactiveCursorPosition: CursorPosition | null = null
 
+    clearInactiveCursorInterval() {
+      if (this.inactiveCursorInterval) {
+        window.clearInterval(this.inactiveCursorInterval)
+        this.inactiveCursorInterval = null
+      }
+    }
+
     @Watch('focused')
     @Watch('isControling')
     @Watch('inactiveCursors')
     restartInactiveCursorInterval() {
       // clear interval if exists
-      if (this.inactiveCursorInterval !== null) {
-        window.clearInterval(this.inactiveCursorInterval)
-        this.inactiveCursorInterval = null
-      }
+      this.clearInactiveCursorInterval()
 
       if (this.inactiveCursors && this.focused && !this.isControling) {
         this.inactiveCursorInterval = window.setInterval(this.sendInactiveMousePos.bind(this), INACTIVE_CURSOR_INTERVAL)
@@ -450,11 +506,11 @@
 
     saveInactiveMousePos(e: MouseEvent) {
       const pos = this.getMousePos(e.clientX, e.clientY)
-      Vue.set(this, 'inactiveCursorPosition', pos)
+      this.inactiveCursorPosition = pos
     }
 
     sendInactiveMousePos() {
-      if (this.inactiveCursorPosition != null) {
+      if (this.inactiveCursorPosition) {
         this.webrtc.send('mousemove', this.inactiveCursorPosition)
       }
     }
@@ -485,7 +541,25 @@
     private cursorImage: CursorImage | null = null
     private cursorElement: HTMLImageElement = new Image()
     private cursorPosition: CursorPosition | null = null
+    private cursorLastTime = 0
     private canvasRequestedFrame = false
+    private canvasRenderTimeout: number | null = null
+
+    private unsubscribePixelRatioChange?: () => void
+    private onPixelRatioChange() {
+      if (this.unsubscribePixelRatioChange) {
+        this.unsubscribePixelRatioChange()
+      }
+
+      const media = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
+      media.addEventListener('change', this.onPixelRatioChange)
+      this.unsubscribePixelRatioChange = () => {
+        media.removeEventListener('change', this.onPixelRatioChange)
+      }
+
+      this.canvasScale = window.devicePixelRatio
+      this.onCanvasSizeChange(this.canvasSize)
+    }
 
     @Watch('canvasSize')
     onCanvasSizeChange({ width, height }: Dimension) {
@@ -495,13 +569,13 @@
 
     onCursorPosition(data: CursorPosition) {
       if (!this.isControling) {
-        Vue.set(this, 'cursorPosition', data)
+        this.cursorPosition = data
         this.canvasRequestRedraw()
       }
     }
 
     onCursorImage(data: CursorImage) {
-      Vue.set(this, 'cursorImage', data)
+      this.cursorImage = data
 
       if (!this.isControling) {
         this.cursorElement.src = data.uri
@@ -509,9 +583,9 @@
     }
 
     canvasResize({ width, height }: Dimension) {
-      this._overlay.width = width * CANVAS_SCALE
-      this._overlay.height = height * CANVAS_SCALE
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._overlay.width = width * this.canvasScale
+      this._overlay.height = height * this.canvasScale
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
     }
 
     @Watch('hostId')
@@ -519,6 +593,23 @@
     canvasRequestRedraw() {
       // skip rendering if there is already in progress
       if (this.canvasRequestedFrame) return
+
+      // throttle rendering according to fps
+      if (this.fps > 0) {
+        if (this.canvasRenderTimeout) {
+          window.clearTimeout(this.canvasRenderTimeout)
+          this.canvasRenderTimeout = null
+        }
+
+        const now = Date.now()
+        if (now - this.cursorLastTime < 1000 / this.fps) {
+          // ensure that last frame is rendered
+          this.canvasRenderTimeout = window.setTimeout(this.canvasRequestRedraw, 1000 / this.fps)
+          return
+        }
+
+        this.cursorLastTime = now
+      }
 
       // request animation frame from a browser
       this.canvasRequestedFrame = true
@@ -543,10 +634,10 @@
       if (this.cursorImage.width <= 1 && this.cursorImage.height <= 1) return
 
       // get intrinsic dimensions
-      let { width, height } = this.canvasSize
+      const { width, height } = this.canvasSize
 
       // reset transformation, X and Y will be 0 again
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
 
       // get cursor position
       let x = Math.round((this.cursorPosition.x / this.screenSize.width) * width)
@@ -588,9 +679,9 @@
 
     canvasClear() {
       // reset transformation, X and Y will be 0 again
-      this._ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0)
+      this._ctx.setTransform(this.canvasScale, 0, 0, this.canvasScale, 0, 0)
 
-      const { width, height } = this._overlay
+      const { width, height } = this.canvasSize
       this._ctx.clearRect(0, 0, width, height)
     }
 
@@ -603,7 +694,7 @@
 
     @Watch('isControling')
     onControlChange(isControling: boolean) {
-      Vue.set(this, 'keyboardModifiers', null)
+      this.keyboardModifiers = null
 
       if (isControling && this.reqMouseDown) {
         this.updateKeyboardModifiers(this.reqMouseDown)
@@ -648,25 +739,25 @@
 
     public mobileKeyboardShow() {
       // skip if not a touch device
-      if (!this.isTouchDevice) return
+      if (!this.hasMobileKeyboard) return
 
       this.kbdShow = true
       this.kbdOpen = false
 
       this._textarea.focus()
-      window.visualViewport.addEventListener('resize', this.onVisualViewportResize)
+      window.visualViewport?.addEventListener('resize', this.onVisualViewportResize)
       this.$emit('mobileKeyboardOpen', true)
     }
 
     public mobileKeyboardHide() {
       // skip if not a touch device
-      if (!this.isTouchDevice) return
+      if (!this.hasMobileKeyboard) return
 
       this.kbdShow = false
       this.kbdOpen = false
 
       this.$emit('mobileKeyboardOpen', false)
-      window.visualViewport.removeEventListener('resize', this.onVisualViewportResize)
+      window.visualViewport?.removeEventListener('resize', this.onVisualViewportResize)
       this._textarea.blur()
     }
 

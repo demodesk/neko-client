@@ -92,11 +92,18 @@ export interface Keyboard {
 export interface Screen {
   size: ScreenSize
   configurations: ScreenSize[]
+  sync: ScreenSync
 }
 
 export interface ScreenSize {
   width: number
   height: number
+  rate: number
+}
+
+export interface ScreenSync {
+  enabled: boolean
+  multiplier: number
   rate: number
 }
 

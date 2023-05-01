@@ -18,6 +18,7 @@
         :canvasSize="canvasSize"
         :cursors="state.cursors"
         :cursorDraw="inactiveCursorDrawFunction"
+        :fps="fps"
       />
       <neko-overlay
         ref="overlay"
@@ -34,6 +35,8 @@
         :cursorDraw="cursorDrawFunction"
         :implicitControl="state.settings.implicit_hosting && session.profile.can_host"
         :inactiveCursors="state.settings.inactive_cursors && session.profile.sends_inactive_cursor"
+        :fps="fps"
+        :hasMobileKeyboard="is_touch_device"
         @updateKeyboardModifiers="updateKeyboardModifiers($event)"
         @uploadDrop="uploadDrop($event)"
         @mobileKeyboardOpen="state.mobile_keyboard_open = $event"
@@ -92,6 +95,8 @@
   import Screencast from './screencast.vue'
   import Cursors from './cursors.vue'
 
+  const SCREEN_SYNC_THROTTLE = 500 // wait 500ms before reacting to automatic screen size change
+
   @Component({
     name: 'neko-canvas',
     components: {
@@ -129,6 +134,14 @@
 
     @Prop({ type: Boolean })
     private readonly autoplay!: boolean
+
+    // fps for cursor rendering, 0 for no cap
+    @Prop({ type: Number, default: 0 })
+    private readonly fps!: number
+
+    // auto / touch / mouse
+    @Prop({ type: String, default: 'auto' })
+    private readonly inputMode!: String
 
     /////////////////////////////
     // Public state
@@ -190,6 +203,11 @@
           rate: 30,
         },
         configurations: [],
+        sync: {
+          enabled: false,
+          multiplier: 0,
+          rate: 30,
+        },
       },
       session_id: null,
       sessions: {},
@@ -226,6 +244,20 @@
 
     public get private_mode_enabled() {
       return this.state.settings.private_mode && !this.is_admin
+    }
+
+    public get is_touch_device() {
+      if (this.inputMode == 'mouse') return false
+      if (this.inputMode == 'touch') return true
+
+      return (
+        // check if the device has a touch screen
+        ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+        // we also check if the device has a pointer
+        !window.matchMedia('(pointer:fine)').matches &&
+        // and is capable of hover, then it probably has a mouse
+        !window.matchMedia('(hover:hover)').matches
+      )
     }
 
     @Watch('private_mode_enabled')
@@ -426,6 +458,12 @@
       }
     }
 
+    public setScreenSync(enabled: boolean = true, multiplier: number = 0, rate: number = 60) {
+      Vue.set(this.state.screen.sync, 'enabled', enabled)
+      Vue.set(this.state.screen.sync, 'multiplier', multiplier)
+      Vue.set(this.state.screen.sync, 'rate', rate)
+    }
+
     public setCursorDrawFunction(fn?: CursorDrawFunction) {
       Vue.set(this, 'cursorDrawFunction', fn)
     }
@@ -572,6 +610,33 @@
       this.connection.websocket.send(EVENT.KEYBOARD_MODIFIERS, modifiers)
     }
 
+    @Watch('state.screen.sync.enabled')
+    onScreenSyncChange() {
+      if (this.state.screen.sync.enabled) {
+        this.syncScreenSize()
+        window.addEventListener('resize', this.syncScreenSize)
+      } else {
+        window.removeEventListener('resize', this.syncScreenSize)
+      }
+    }
+
+    syncScreenSizeTimeout = 0
+    public syncScreenSize() {
+      if (this.syncScreenSizeTimeout) {
+        window.clearTimeout(this.syncScreenSizeTimeout)
+      }
+      this.syncScreenSizeTimeout = window.setTimeout(() => {
+        const multiplier = this.state.screen.sync.multiplier || window.devicePixelRatio
+        this.syncScreenSizeTimeout = 0
+        const { offsetWidth, offsetHeight } = this._component
+        this.setScreenSize(
+          Math.round(offsetWidth * multiplier),
+          Math.round(offsetHeight * multiplier),
+          this.state.screen.sync.rate,
+        )
+      }, SCREEN_SYNC_THROTTLE)
+    }
+
     @Watch('state.screen.size')
     onResize() {
       const { width, height } = this.state.screen.size
@@ -660,6 +725,7 @@
       Vue.set(this.state.control, 'host_id', null)
       Vue.set(this.state.screen, 'size', { width: 1280, height: 720, rate: 30 })
       Vue.set(this.state.screen, 'configurations', [])
+      Vue.set(this.state.screen, 'sync', false)
       Vue.set(this.state, 'session_id', null)
       Vue.set(this.state, 'sessions', {})
       Vue.set(this.state, 'settings', {

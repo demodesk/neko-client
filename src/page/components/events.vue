@@ -330,27 +330,69 @@
         </tr>
         <tr>
           <td>
-            <select
-              :value="Object.values(neko.state.screen.size).join()"
-              @input="
-                a = String($event.target.value).split(',')
-                neko.setScreenSize(parseInt(a[0]), parseInt(a[1]), parseInt(a[2]))
-              "
-            >
+            <input
+              list="screen-configuration"
+              v-model="screenConfiguration"
+              style="width: 100%; box-sizing: border-box"
+            />
+            <datalist id="screen-configuration">
               <option
                 v-for="{ width, height, rate } in neko.state.screen.configurations"
-                :key="String(width) + String(height) + String(rate)"
-                :value="[width, height, rate].join()"
-              >
-                {{ width }}x{{ height }}@{{ rate }}
-              </option>
-            </select>
-            <button @click="screenChangingToggle">screenChangingToggle</button>
+                :key="String(width) + 'x' + String(height) + '@' + String(rate)"
+                :value="String(width) + 'x' + String(height) + '@' + String(rate)"
+              />
+            </datalist>
+            <button @click="setScreenConfiguration">set</button>
+          </td>
+        </tr>
+        <tr>
+          <th class="middle">screen.sync.enabled</th>
+          <td>
+            <div class="space-between">
+              <span>{{ neko.state.screen.sync.enabled }}</span>
+              <button @click="neko.state.screen.sync.enabled = !neko.state.screen.sync.enabled">
+                <i class="fas fa-toggle-on"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th rowspan="2">screen.sync.multiplier</th>
+          <td>{{ neko.state.screen.sync.multiplier || 'use device pixel ratio' }}</td>
+        </tr>
+        <tr>
+          <td>
+            <input
+              type="range"
+              min="0"
+              max="10"
+              :value="neko.state.screen.sync.multiplier"
+              @input="neko.state.screen.sync.multiplier = Number($event.target.value)"
+              step="0.1"
+            />
+          </td>
+        </tr>
+        <tr>
+          <th rowspan="2">screen.sync.rate</th>
+          <td>{{ neko.state.screen.sync.rate }}</td>
+        </tr>
+        <tr>
+          <td>
+            <input
+              type="range"
+              min="5"
+              max="60"
+              :value="neko.state.screen.sync.rate"
+              @input="neko.state.screen.sync.rate = Number($event.target.value)"
+              step="5"
+            />
           </td>
         </tr>
       </template>
       <tr v-else>
         <th>screen.configurations</th>
+        <td>Session is not admin.</td>
+        <th>screen.sync</th>
         <td>Session is not admin.</td>
       </tr>
 
@@ -453,6 +495,19 @@
           </div>
         </td>
       </tr>
+      <tr>
+        <th>chaos monkey</th>
+        <td>
+          <button @click="cursorMovingToggle">cursor moving</button>
+          <button @click="screenChangingToggle">screen cfg changing</button>
+        </td>
+      </tr>
+      <tr>
+        <th>click on color</th>
+        <td>
+          <NekoColor @colorChange="neko.control.buttonPress(1, $event)" />
+        </td>
+      </tr>
     </table>
   </div>
 </template>
@@ -490,9 +545,13 @@
 <script lang="ts">
   import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
   import Neko from '~/component/main.vue'
+  import NekoColor from './color.vue'
 
   @Component({
     name: 'neko-events',
+    components: {
+      NekoColor,
+    },
   })
   export default class extends Vue {
     @Prop() readonly neko!: Neko
@@ -531,6 +590,37 @@
         //@ts-ignore
         clearInterval(this.screen_interval)
         this.screen_interval = null
+      }
+    }
+
+    screenConfiguration = ''
+    setScreenConfiguration() {
+      let [width, height, rate] = this.screenConfiguration.split(/[@x]/)
+      this.neko.setScreenSize(parseInt(width), parseInt(height), parseInt(rate))
+    }
+
+    @Watch('neko.state.screen.size', { immediate: true })
+    onScreenSizeChange(val: any) {
+      this.screenConfiguration = `${val.width}x${val.height}@${val.rate}`
+    }
+
+    // fast cursor moving test
+    cursor_interval = null
+    cursorMovingToggle() {
+      if (this.cursor_interval === null) {
+        let len = this.neko.state.screen.size.width
+
+        //@ts-ignore
+        this.cursor_interval = setInterval(() => {
+          let x = Math.floor(Math.random() * len)
+          let y = Math.floor(Math.random() * len)
+
+          this.neko.control.move({ x, y })
+        }, 10)
+      } else {
+        //@ts-ignore
+        clearInterval(this.cursor_interval)
+        this.cursor_interval = null
       }
     }
 

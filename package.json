@@ -1,6 +1,6 @@
 {
   "name": "@demodesk/neko",
-  "version": "1.6.15",
+  "version": "1.6.22",
   "description": "Client as reusable Vue.js component for neko streaming server.",
   "repository": "https://github.com/demodesk/neko-client",
   "publishConfig": {
@@ -8,15 +8,16 @@
   },
   "main": "dist/neko.umd.js",
   "module": "dist/neko.common.js",
+  "typings": "dist/types/main.d.ts",
   "scripts": {
     "serve": "vue-cli-service serve --mode development",
     "lint": "vue-cli-service lint",
-    "build": "vue-cli-service build --target lib --name neko ./src/index.ts",
+    "build": "vue-cli-service build --target lib --name neko ./src/lib.ts && ./types-build.sh",
     "build:page": "vue-cli-service build"
   },
   "dependencies": {
     "axios": "^0.27.2",
-    "eventemitter3": "^4.0.7",
+    "eventemitter3": "^5.0.0",
     "resize-observer-polyfill": "^1.5.1",
     "vue": "^2.6.14",
     "vue-class-component": "^7.2.6",
