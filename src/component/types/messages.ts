@@ -45,8 +45,6 @@ export interface SystemDisconnect {
 export interface SignalProvide {
   sdp: string
   iceservers: ICEServer[]
-  // TODO: Remove this field in the future.
-  video: string
 }
 
 export type SignalCandidate = RTCIceCandidateInit

@@ -147,11 +147,8 @@ export class NekoMessages extends EventEmitter<NekoEvents> {
   // Signal Events
   /////////////////////////////
 
-  protected async [EVENT.SIGNAL_PROVIDE]({ sdp, iceservers, video }: message.SignalProvide) {
+  protected async [EVENT.SIGNAL_PROVIDE]({ sdp, iceservers }: message.SignalProvide) {
     this._localLog.debug(`EVENT.SIGNAL_PROVIDE`)
-
-    // TODO: Remove this in the future.
-    Vue.set(this._state.connection.webrtc, 'video', video)
 
     // create WebRTC connection
     await this._connection.webrtc.connect(iceservers)
