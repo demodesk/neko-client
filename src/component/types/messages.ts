@@ -45,10 +45,8 @@ export interface SystemDisconnect {
 export interface SignalProvide {
   sdp: string
   iceservers: ICEServer[]
-  // use SignalVideo instead
+  // TODO: Remove this field in the future.
   video: string
-  bitrate: number
-  video_auto: boolean
 }
 
 export type SignalCandidate = RTCIceCandidateInit
@@ -59,8 +57,7 @@ export interface SignalDescription {
 
 export interface SignalVideo {
   video: string
-  bitrate: number
-  video_auto: boolean
+  auto: boolean
 }
 
 /////////////////////////////

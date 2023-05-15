@@ -39,9 +39,8 @@ export interface WebRTC {
   config: ReconnectorConfig
   stats: WebRTCStats | null
   video: string | null
-  bitrate: number | null
+  auto: boolean
   videos: string[]
-  video_auto: boolean
 }
 
 export interface ReconnectorConfig extends reconnectorTypes.ReconnectorConfig {}

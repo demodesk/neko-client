@@ -109,7 +109,7 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
 
     this._webrtcCongestionControlHandle = (stats: WebRTCStats) => {
       // if automatic quality adjusting is turned off
-      if (this._state.webrtc.video_auto) return
+      if (this._state.webrtc.auto) return
 
       // when connection is paused, 0fps and muted track is expected
       if (stats.paused) return
@@ -146,7 +146,7 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
 
         // downgrade if lower video quality exists
         if (quality && this.webrtc.connected) {
-          this.setVideo(quality, undefined, false)
+          this.websocket.send(EVENT.SIGNAL_VIDEO, { video: quality })
         }
 
         // try to perform ice restart, if available
@@ -172,19 +172,11 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
     this._reconnector.webrtc.config = this._state.webrtc.config
   }
 
-  public setVideo(video: string, bitrate: number = 0, video_auto: boolean) {
-    if (video != '' && !this._state.webrtc.videos.includes(video)) {
-      throw new Error('video id not found')
-    }
-
-    this.websocket.send(EVENT.SIGNAL_VIDEO, { video, bitrate, video_auto })
-  }
-
   public getLogger(scope?: string): Logger {
     return this.logger.new(scope)
   }
 
-  public open(video?: string, bitrate?: number, video_auto?: boolean) {
+  public open(video?: string, auto?: boolean) {
     if (this._open) {
       throw new Error('connection already open')
     }
@@ -199,16 +191,12 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       Vue.set(this._state.webrtc, 'video', video)
     }
 
-    if (bitrate) {
-      Vue.set(this._state.webrtc, 'bitrate', bitrate)
+    // if we didn't specify auto
+    if (typeof auto == 'undefined') {
+      // if we didn't specify video, set auto to true
+      auto = !video
     }
-
-    // default to true
-    if (typeof video_auto === 'undefined') {
-      Vue.set(this._state.webrtc, 'video_auto', true)
-    } else {
-      Vue.set(this._state.webrtc, 'video_auto', video_auto)
-    }
+    Vue.set(this._state.webrtc, 'auto', auto)
 
     Vue.set(this._state, 'status', 'connecting')
 
