@@ -74,8 +74,7 @@
 <script lang="ts">
   export * as ApiModels from './api/models'
   export * as StateModels from './types/state'
-  import * as EVENT from './types/events'
-  import * as webrtcTypes from './types/webrtc'
+  export * as webrtcTypes from './types/webrtc'
 
   import { Configuration } from './api/configuration'
   import { AxiosInstance } from 'axios'
@@ -90,6 +89,8 @@
   import { register as VideoRegister } from './internal/video'
 
   import { ReconnectorConfig } from './types/reconnector'
+  import * as EVENT from './types/events'
+  import * as webrtcTypes from './types/webrtc'
   import NekoState from './types/state'
   import { CursorDrawFunction, InactiveCursorDrawFunction, Dimension } from './types/cursors'
   import Overlay from './overlay.vue'
