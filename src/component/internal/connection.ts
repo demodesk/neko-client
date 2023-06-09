@@ -120,8 +120,8 @@ export class NekoConnection extends EventEmitter<NekoConnectionEvents> {
       // if automatic quality adjusting is turned off
       if (this._state.webrtc.video.auto) return
 
-      // when connection is paused, 0fps and muted track is expected
-      if (stats.paused) return
+      // when connection is paused or video disabled, 0fps and muted track is expected
+      if (stats.paused || this._state.webrtc.video.disabled) return
 
       // if automatic quality adjusting is turned off
       if (!this._reconnector.webrtc.isOpen) return

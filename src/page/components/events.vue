@@ -139,6 +139,13 @@
               </td>
               <td
                 colspan="2"
+                style="background: darkviolet; text-align: center"
+                v-else-if="neko.state.connection.webrtc.video.disabled"
+              >
+                video is disabled
+              </td>
+              <td
+                colspan="2"
                 style="background: red; text-align: center"
                 v-else-if="!neko.state.connection.webrtc.stats.fps"
               >
