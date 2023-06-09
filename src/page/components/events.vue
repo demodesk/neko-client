@@ -158,15 +158,37 @@
         </td>
       </tr>
       <tr>
-        <th>connection.webrtc.video</th>
-        <td>{{ neko.state.connection.webrtc.video }}</td>
-      </tr>
-      <tr>
-        <th>connection.webrtc.auto</th>
+        <th title="connection.webrtc.video.disabled">connection.webrtc.video.disab..</th>
         <td>
           <div class="space-between">
-            <span>{{ neko.state.connection.webrtc.auto }}</span>
-            <button @click="neko.setWebRTCVideo(undefined, !neko.state.connection.webrtc.auto)">
+            <span>{{ neko.state.connection.webrtc.video.disabled }}</span>
+            <button @click="neko.setWebRTCVideo({ disabled: !neko.state.connection.webrtc.video.disabled })">
+              <i class="fas fa-toggle-on"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>connection.webrtc.video.id</th>
+        <td>{{ neko.state.connection.webrtc.video.id }}</td>
+      </tr>
+      <tr>
+        <th>connection.webrtc.video.auto</th>
+        <td>
+          <div class="space-between">
+            <span>{{ neko.state.connection.webrtc.video.auto }}</span>
+            <button @click="neko.setWebRTCVideo({ auto: !neko.state.connection.webrtc.video.auto })">
+              <i class="fas fa-toggle-on"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th title="connection.webrtc.audio.disabled">connection.webrtc.audio.disab..</th>
+        <td>
+          <div class="space-between">
+            <span>{{ neko.state.connection.webrtc.audio.disabled }}</span>
+            <button @click="neko.setWebRTCAudio({ disabled: !neko.state.connection.webrtc.audio.disabled })">
               <i class="fas fa-toggle-on"></i>
             </button>
           </div>
@@ -178,7 +200,10 @@
       </tr>
       <tr>
         <td>
-          <select :value="neko.state.connection.webrtc.video" @input="neko.setWebRTCVideo($event.target.value, false)">
+          <select
+            :value="neko.state.connection.webrtc.video.id"
+            @input="neko.setWebRTCVideo({ selector: { id: $event.target.value } })"
+          >
             <option v-for="video in neko.state.connection.webrtc.videos" :key="video" :value="video">
               {{ video }}
             </option>
