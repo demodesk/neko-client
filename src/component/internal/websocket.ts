@@ -125,7 +125,8 @@ export class NekoWebSocket extends EventEmitter<NekoWebSocketEvents> {
     // heartbeat only updates last_received
     if (event == SYSTEM_HEARTBEAT) return
 
-    this._log.debug(`received websocket event`, { event, payload })
+    // do not spam logs with audio events
+    if (event == 'audio')this._log.debug(`received websocket event`, { event, payload })
     this.emit('message', event, payload)
   }
 

@@ -7,6 +7,8 @@ import { Logger } from '../utils/logger'
 import { NekoConnection } from './connection'
 import NekoState from '../types/state'
 
+import { OpusDecoderWebWorker } from "opus-decoder";
+
 export interface NekoEvents {
   // connection events
   ['connection.status']: (status: 'connected' | 'connecting' | 'disconnected') => void
@@ -42,6 +44,14 @@ export interface NekoEvents {
 
   // external message events
   ['message']: (event: string, payload: any) => void
+}
+function base64ToArrayBuffer(base64:string) {
+  const binaryString = window.atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
 }
 
 export class NekoMessages extends EventEmitter<NekoEvents> {
@@ -141,6 +151,75 @@ export class NekoMessages extends EventEmitter<NekoEvents> {
   protected [EVENT.SYSTEM_DISCONNECT]({ message }: message.SystemDisconnect) {
     this._localLog.debug(`EVENT.SYSTEM_DISCONNECT`)
     this._connection.close(new Error(message))
+  }
+
+  // create X workers
+  opusDecoder: OpusDecoderWebWorker[] = Array.from({length: 1}, () => new OpusDecoderWebWorker())
+  lastDecoder = 0;
+  audioCtx: AudioContext = new AudioContext()
+  decodedSample = 0;
+  startSampleOffset = 0;
+  startTime = 0;
+  waitingForAudio = false;
+
+  audioStartedAt = 0;
+  protected async ['audio']({ duration, timestamp, data }: any) {
+    console.log('audio',
+      'duration', duration,
+      'timestamp', timestamp,
+      'audioStartedAt', this.audioStartedAt)
+    console.log('audioCtx',
+      'currentTime', this.audioCtx.currentTime,
+      'state', this.audioCtx.state,
+      'baseLatency', this.audioCtx.baseLatency,
+      'outputLatency', this.audioCtx.outputLatency)
+
+    if (this.audioCtx.currentTime !== 0 && this.audioStartedAt === 0) {
+      // get current timestamp
+      this.audioStartedAt = (new Date()).getTime()
+      this.startTime = 0
+    }
+
+    const startOffset = this.startTime;
+    this.startTime += duration;
+
+    const opusDecoder = this.opusDecoder[this.lastDecoder++ % this.opusDecoder.length];
+    opusDecoder.decodeFrame(new Uint8Array(data)).then(({channelData, samplesDecoded, sampleRate}) => {
+      const audioBuffer = this.audioCtx.createBuffer(channelData.length, samplesDecoded, sampleRate);
+      console.log('frameDecoded', audioBuffer.duration, 'vs', duration, '@', this.audioCtx.currentTime, 'vs', startOffset)
+
+      channelData.forEach((channel, idx) =>
+        audioBuffer.getChannelData(idx).set(channel)
+      );
+
+      const source = this.audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioCtx.destination);
+     // if ( this.audioStartedAt !== 0 ) {
+     //   console.log('start', (timestamp - this.audioStartedAt) / 1000, 'vs', this.audioCtx.currentTime, 'vs', startOffset)
+     //   source.start(((timestamp - this.audioStartedAt) / 1000) - 5);
+      //} else {
+        source.start(startOffset);
+     //}
+/*
+      const scalingFactor = 100;
+      const startSamples =
+        this.decodedSample * scalingFactor + this.startSampleOffset;
+      const audioContextSamples = Math.round(
+        this.audioCtx.currentTime * sampleRate * scalingFactor
+      );
+
+      if (startSamples < audioContextSamples) {
+        // audio context time starts incrementing immediately when it's created
+        // offset needs to be accounted for to prevent overlapping sources
+        this.startSampleOffset += audioContextSamples - startSamples;
+      }
+
+      source.start(startSamples / sampleRate / scalingFactor);
+
+      this.decodedSample += samplesDecoded;
+*/
+    })
   }
 
   /////////////////////////////

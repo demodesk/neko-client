@@ -419,6 +419,10 @@
       //@ts-ignore
       window.neko = this.neko
 
+      // For testing purposes, disable audio
+      // TODO: refactor
+      this.neko.state.connection.webrtc.audio.disabled = true
+
       // initial URL
       const url = new URL(location.href).searchParams.get('url')
       if (url) {
