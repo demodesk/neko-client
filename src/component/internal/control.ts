@@ -43,11 +43,20 @@ export class NekoControl extends EventEmitter<NekoControlEvents> {
   }
 
   public move(pos: ControlPos) {
-    this._connection.websocket.send(EVENT.CONTROL_MOVE, pos as message.ControlPos)
+    if (this._connection.webrtc.connected) {
+      this._connection.webrtc.send('mousemove', pos)
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_MOVE, pos as message.ControlPos)
+    }
   }
 
+  // TODO: rename pos to delta, and add a new pos parameter
   public scroll(pos: ControlPos) {
-    this._connection.websocket.send(EVENT.CONTROL_SCROLL, pos as message.ControlPos)
+    if (this._connection.webrtc.connected) {
+      this._connection.webrtc.send('wheel', pos)
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_SCROLL, pos as message.ControlPos)
+    }
   }
 
   public buttonPress(code: number, pos?: ControlPos) {
@@ -55,11 +64,21 @@ export class NekoControl extends EventEmitter<NekoControlEvents> {
   }
 
   public buttonDown(code: number, pos?: ControlPos) {
-    this._connection.websocket.send(EVENT.CONTROL_BUTTONDOWN, { code, ...pos } as message.ControlButton)
+    if (this._connection.webrtc.connected) {
+      if (pos) this._connection.webrtc.send('mousemove', pos)
+      this._connection.webrtc.send('mousedown', { key: code })
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_BUTTONDOWN, { code, ...pos } as message.ControlButton)
+    }
   }
 
   public buttonUp(code: number, pos?: ControlPos) {
-    this._connection.websocket.send(EVENT.CONTROL_BUTTONUP, { code, ...pos } as message.ControlButton)
+    if (this._connection.webrtc.connected) {
+      if (pos) this._connection.webrtc.send('mousemove', pos)
+      this._connection.webrtc.send('mouseup', { key: code })
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_BUTTONUP, { code, ...pos } as message.ControlButton)
+    }
   }
 
   public keyPress(keysym: number, pos?: ControlPos) {
@@ -67,11 +86,21 @@ export class NekoControl extends EventEmitter<NekoControlEvents> {
   }
 
   public keyDown(keysym: number, pos?: ControlPos) {
-    this._connection.websocket.send(EVENT.CONTROL_KEYDOWN, { keysym, ...pos } as message.ControlKey)
+    if (this._connection.webrtc.connected) {
+      if (pos) this._connection.webrtc.send('mousemove', pos)
+      this._connection.webrtc.send('keydown', { key: keysym })
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_KEYDOWN, { keysym, ...pos } as message.ControlKey)
+    }
   }
 
   public keyUp(keysym: number, pos?: ControlPos) {
-    this._connection.websocket.send(EVENT.CONTROL_KEYUP, { keysym, ...pos } as message.ControlKey)
+    if (this._connection.webrtc.connected) {
+      if (pos) this._connection.webrtc.send('mousemove', pos)
+      this._connection.webrtc.send('keyup', { key: keysym })
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_KEYUP, { keysym, ...pos } as message.ControlKey)
+    }
   }
 
   public cut() {
