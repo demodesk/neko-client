@@ -24,7 +24,7 @@
         ref="overlay"
         v-show="!private_mode_enabled && state.connection.status != 'disconnected'"
         :style="{ pointerEvents: state.control.locked ? 'none' : 'auto' }"
-        :wsControl="control"
+        :control="control"
         :sessions="state.sessions"
         :hostId="state.control.host_id"
         :webrtc="connection.webrtc"

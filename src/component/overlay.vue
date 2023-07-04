@@ -6,8 +6,8 @@
       class="neko-overlay"
       :style="{ cursor }"
       v-model="textInput"
-      @click.stop.prevent="wsControl.emit('overlay.click', $event)"
-      @contextmenu.stop.prevent="wsControl.emit('overlay.contextmenu', $event)"
+      @click.stop.prevent="control.emit('overlay.click', $event)"
+      @contextmenu.stop.prevent="control.emit('overlay.contextmenu', $event)"
       @wheel.stop.prevent="onWheel"
       @mousemove.stop.prevent="onMouseMove"
       @mousedown.stop.prevent="onMouseDown"
@@ -55,8 +55,9 @@
   import { CursorPosition, CursorImage } from './types/webrtc'
   import { CursorDrawFunction, Dimension, KeyboardModifiers } from './types/cursors'
 
-  const WHEEL_STEP = 53 // Delta threshold for a mouse wheel step
-  const WHEEL_LINE_HEIGHT = 19
+  // Wheel thresholds
+  const WHEEL_STEP = 53 // Pixels needed for one step
+  const WHEEL_LINE_HEIGHT = 19 // Assumed pixels for one line step
 
   const MOUSE_MOVE_THROTTLE = 1000 / 60 // in ms, 60fps
   const INACTIVE_CURSOR_INTERVAL = 1000 / 4 // in ms, 4fps
@@ -77,7 +78,7 @@
     private focused = false
 
     @Prop()
-    private readonly wsControl!: NekoControl
+    private readonly control!: NekoControl
 
     @Prop()
     private readonly sessions!: Record<string, Session>
@@ -165,12 +166,7 @@
         const isCtrlKey = key == KeyTable.XK_Control_L || key == KeyTable.XK_Control_R
         if (isCtrlKey) ctrlKey = key
 
-        if (this.webrtc.connected) {
-          this.webrtc.send('keydown', { key })
-        } else {
-          this.wsControl.keyDown(key)
-        }
-
+        this.control.keyDown(key)
         return isCtrlKey
       }
       this.keyboard.onkeyup = (key: number) => {
@@ -184,11 +180,7 @@
         const isCtrlKey = key == KeyTable.XK_Control_L || key == KeyTable.XK_Control_R
         if (isCtrlKey) ctrlKey = 0
 
-        if (this.webrtc.connected) {
-          this.webrtc.send('keyup', { key })
-        } else {
-          this.wsControl.keyUp(key)
-        }
+        this.control.keyUp(key)
       }
       this.keyboard.listenTo(this._textarea)
 
@@ -268,7 +260,11 @@
 
     sendMousePos(e: MouseEvent) {
       const pos = this.getMousePos(e.clientX, e.clientY)
-      this.webrtc.send('mousemove', pos)
+      // not using NekoControl here because we want to avoid
+      // sending mousemove events over websocket
+      if (this.webrtc.connected) {
+        this.webrtc.send('mousemove', pos)
+      } // otherwise, no events are sent
       this.cursorPosition = pos
     }
 
@@ -307,7 +303,7 @@
     @Watch('textInput')
     onTextInputChange() {
       if (this.textInput == '') return
-      this.wsControl.paste(this.textInput)
+      this.control.paste(this.textInput)
       this.textInput = ''
     }
 
@@ -365,12 +361,8 @@
       // skip if not scrolled
       if (x == 0 && y == 0) return
 
-      if (this.webrtc.connected) {
-        this.sendMousePos(e)
-        this.webrtc.send('wheel', { x, y })
-      } else {
-        this.wsControl.scroll({ x, y })
-      }
+      // TODO: add position for precision scrolling
+      this.control.scroll({ x, y })
     }
 
     lastMouseMove = 0
@@ -400,13 +392,8 @@
       }
 
       const key = e.button + 1
-      if (this.webrtc.connected) {
-        this.sendMousePos(e)
-        this.webrtc.send('mousedown', { key })
-      } else {
-        const pos = this.getMousePos(e.clientX, e.clientY)
-        this.wsControl.buttonDown(key, pos)
-      }
+      const pos = this.getMousePos(e.clientX, e.clientY)
+      this.control.buttonDown(key, pos)
     }
 
     onMouseUp(e: MouseEvent) {
@@ -420,13 +407,8 @@
       }
 
       const key = e.button + 1
-      if (this.webrtc.connected) {
-        this.sendMousePos(e)
-        this.webrtc.send('mouseup', { key })
-      } else {
-        const pos = this.getMousePos(e.clientX, e.clientY)
-        this.wsControl.buttonUp(key, pos)
-      }
+      const pos = this.getMousePos(e.clientX, e.clientY)
+      this.control.buttonUp(key, pos)
     }
 
     onMouseEnter(e: MouseEvent) {
@@ -474,7 +456,8 @@
         const files = await getFilesFromDataTansfer(dt)
         if (files.length === 0) return
 
-        this.$emit('uploadDrop', { ...this.getMousePos(e.clientX, e.clientY), files })
+        const pos = this.getMousePos(e.clientX, e.clientY)
+        this.$emit('uploadDrop', { ...pos, files })
       }
     }
 
@@ -510,9 +493,11 @@
     }
 
     sendInactiveMousePos() {
-      if (this.inactiveCursorPosition) {
+      if (this.inactiveCursorPosition && this.webrtc.connected) {
+        // not using NekoControl here, because inactive cursors are
+        // treated differently than moving the mouse while controling
         this.webrtc.send('mousemove', this.inactiveCursorPosition)
-      }
+      } // if webrtc is not connected, we don't need to send anything
     }
 
     //
@@ -715,7 +700,7 @@
       if (this.implicitControl && e.type === 'mousedown') {
         this.reqMouseDown = e
         this.reqMouseUp = null
-        this.wsControl.request()
+        this.control.request()
       }
 
       if (this.implicitControl && e.type === 'mouseup') {
@@ -726,7 +711,7 @@
     // unused
     implicitControlRelease() {
       if (this.implicitControl) {
-        this.wsControl.release()
+        this.control.release()
       }
     }
 
