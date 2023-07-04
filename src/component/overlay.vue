@@ -47,6 +47,7 @@
   import { Vue, Component, Ref, Prop, Watch } from 'vue-property-decorator'
 
   import { KeyboardInterface, NewKeyboard } from './utils/keyboard'
+  import GestureHandlerInit, { GestureHandler } from './utils/gesturehandler'
   import { KeyTable, keySymsRemap } from './utils/keyboard-remapping'
   import { getFilesFromDataTansfer } from './utils/file-upload'
   import { NekoControl } from './internal/control'
@@ -58,6 +59,12 @@
   // Wheel thresholds
   const WHEEL_STEP = 53 // Pixels needed for one step
   const WHEEL_LINE_HEIGHT = 19 // Assumed pixels for one line step
+
+  // Gesture thresholds
+  const GESTURE_ZOOMSENS = 75;
+  const GESTURE_SCRLSENS = 50;
+  const DOUBLE_TAP_TIMEOUT = 1000;
+  const DOUBLE_TAP_THRESHOLD = 50;
 
   const MOUSE_MOVE_THROTTLE = 1000 / 60 // in ms, 60fps
   const INACTIVE_CURSOR_INTERVAL = 1000 / 4 // in ms, 4fps
@@ -73,6 +80,7 @@
     private canvasScale = window.devicePixelRatio
 
     private keyboard!: KeyboardInterface
+    private gestureHandler!: GestureHandler
     private textInput = ''
 
     private focused = false
@@ -184,6 +192,14 @@
       }
       this.keyboard.listenTo(this._textarea)
 
+      // Initialize GestureHandler
+      this.gestureHandler = new GestureHandlerInit()
+      this.gestureHandler.attach(this._textarea)
+
+      this._textarea.addEventListener('gesturestart', this.onGestureHandler)
+      this._textarea.addEventListener('gesturemove', this.onGestureHandler)
+      this._textarea.addEventListener('gestureend', this.onGestureHandler)
+
       this._textarea.addEventListener('touchstart', this.onTouchHandler, { passive: false })
       this._textarea.addEventListener('touchmove', this.onTouchHandler, { passive: false })
       this._textarea.addEventListener('touchend', this.onTouchHandler, { passive: false })
@@ -200,6 +216,14 @@
       if (this.keyboard) {
         this.keyboard.removeListener()
       }
+
+      if (this.gestureHandler) {
+        this.gestureHandler.detach()
+      }
+
+      this._textarea.removeEventListener('gesturestart', this.onGestureHandler)
+      this._textarea.removeEventListener('gesturemove', this.onGestureHandler)
+      this._textarea.removeEventListener('gestureend', this.onGestureHandler)
 
       this._textarea.removeEventListener('touchstart', this.onTouchHandler)
       this._textarea.removeEventListener('touchmove', this.onTouchHandler)
@@ -236,17 +260,173 @@
           return
       }
 
-      const touch = e.changedTouches[0]
-      touch.target.dispatchEvent(
-        new MouseEvent(type, {
-          button: 0, // currently only left button is supported
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-        }),
-      )
+     /*
+     const touch = e.changedTouches[0]
+     touch.target.dispatchEvent(
+       new MouseEvent(type, {
+         button: 0, // currently only left button is supported
+         clientX: touch.clientX,
+         clientY: touch.clientY,
+       }),
+     )
 
-      e.preventDefault()
-      e.stopPropagation()
+     e.preventDefault()
+     e.stopPropagation()
+     */
+    }
+
+    // Gesture state
+    private _gestureLastTapTime: any | null = null
+    private _gestureFirstDoubleTapEv: any | null = null
+    private _gestureLastMagnitudeX = 0
+    private _gestureLastMagnitudeY = 0
+
+    _handleTapEvent(ev: any, bmask: number) {
+      let pos = this.getMousePos(ev.detail.clientX, ev.detail.clientY)
+
+      // If the user quickly taps multiple times we assume they meant to
+      // hit the same spot, so slightly adjust coordinates
+
+      if ((this._gestureLastTapTime !== null) &&
+        ((Date.now() - this._gestureLastTapTime) < DOUBLE_TAP_TIMEOUT) &&
+        (this._gestureFirstDoubleTapEv.detail.type === ev.detail.type)) {
+        let dx = this._gestureFirstDoubleTapEv.detail.clientX - ev.detail.clientX;
+        let dy = this._gestureFirstDoubleTapEv.detail.clientY - ev.detail.clientY;
+        let distance = Math.hypot(dx, dy);
+
+        if (distance < DOUBLE_TAP_THRESHOLD) {
+          pos = this.getMousePos(this._gestureFirstDoubleTapEv.detail.clientX,
+            this._gestureFirstDoubleTapEv.detail.clientY);
+        } else {
+          this._gestureFirstDoubleTapEv = ev;
+        }
+      } else {
+        this._gestureFirstDoubleTapEv = ev;
+      }
+      this._gestureLastTapTime = Date.now();
+
+      this.control.buttonDown(bmask, pos)
+      this.control.buttonUp(bmask, pos)
+    }
+
+    onGestureHandler(ev: any) {
+      console.log('onGestureHandler', ev.type, ev.detail.type, ev.detail.clientX, ev.detail.clientY)
+      const pos = this.getMousePos(ev.detail.clientX, ev.detail.clientY)
+      // check for NaN
+      if (pos.x !== pos.x || pos.y !== pos.y) {
+        console.log('onGestureHandler: pos is NaN')
+      }
+
+      let magnitude
+      switch (ev.type) {
+        case 'gesturestart':
+          switch (ev.detail.type) {
+            case 'onetap':
+              this._handleTapEvent(ev, 0x1)
+              break
+            case 'twotap':
+              this._handleTapEvent(ev, 0x4)
+              break
+            case 'threetap':
+              this._handleTapEvent(ev, 0x2)
+              break
+            case 'drag':
+              this.control.buttonDown(0x1, pos)
+              break
+            case 'longpress':
+              this.control.buttonDown(0x4, pos)
+              break
+
+            case 'twodrag':
+              this._gestureLastMagnitudeX = ev.detail.magnitudeX
+              this._gestureLastMagnitudeY = ev.detail.magnitudeY
+              this.control.move(pos)
+              break
+            case 'pinch':
+              this._gestureLastMagnitudeX = Math.hypot(ev.detail.magnitudeX,
+                                  ev.detail.magnitudeY)
+              this.control.move(pos)
+              break
+          }
+          break
+
+        case 'gesturemove':
+          switch (ev.detail.type) {
+            case 'onetap':
+            case 'twotap':
+            case 'threetap':
+              break
+            case 'drag':
+            case 'longpress':
+              this.control.move(pos)
+              break
+            case 'twodrag':
+              // Always scroll in the same position.
+              // We don't know if the mouse was moved so we need to move it
+              // every update.
+              this.control.move(pos)
+              while ((ev.detail.magnitudeY - this._gestureLastMagnitudeY) > GESTURE_SCRLSENS) {
+                this.control.buttonDown(0x8)
+                this.control.buttonUp(0x8)
+                this._gestureLastMagnitudeY += GESTURE_SCRLSENS
+              }
+              while ((ev.detail.magnitudeY - this._gestureLastMagnitudeY) < -GESTURE_SCRLSENS) {
+                this.control.buttonDown(0x10)
+                this.control.buttonUp(0x10)
+                this._gestureLastMagnitudeY -= GESTURE_SCRLSENS
+              }
+              while ((ev.detail.magnitudeX - this._gestureLastMagnitudeX) > GESTURE_SCRLSENS) {
+                this.control.buttonDown(0x20)
+                this.control.buttonUp(0x20)
+                this._gestureLastMagnitudeX += GESTURE_SCRLSENS
+              }
+              while ((ev.detail.magnitudeX - this._gestureLastMagnitudeX) < -GESTURE_SCRLSENS) {
+                this.control.buttonDown(0x40)
+                this.control.buttonUp(0x40)
+                this._gestureLastMagnitudeX -= GESTURE_SCRLSENS
+              }
+              break
+            case 'pinch':
+              // Always scroll in the same position.
+              // We don't know if the mouse was moved so we need to move it
+              // every update.
+              this.control.move(pos)
+              magnitude = Math.hypot(ev.detail.magnitudeX, ev.detail.magnitudeY)
+              if (Math.abs(magnitude - this._gestureLastMagnitudeX) > GESTURE_ZOOMSENS) {
+                this.control.keyDown(KeyTable.XK_Control_L)
+                while ((magnitude - this._gestureLastMagnitudeX) > GESTURE_ZOOMSENS) {
+                  this.control.buttonDown(0x8)
+                  this.control.buttonUp(0x8)
+                  this._gestureLastMagnitudeX += GESTURE_ZOOMSENS
+                }
+                while ((magnitude -  this._gestureLastMagnitudeX) < -GESTURE_ZOOMSENS) {
+                  this.control.buttonDown(0x10)
+                  this.control.buttonUp(0x10)
+                  this._gestureLastMagnitudeX -= GESTURE_ZOOMSENS
+                }
+              }
+              this.control.keyUp(KeyTable.XK_Control_L)
+              break
+          }
+          break
+
+        case 'gestureend':
+          switch (ev.detail.type) {
+            case 'onetap':
+            case 'twotap':
+            case 'threetap':
+            case 'pinch':
+            case 'twodrag':
+              break
+            case 'drag':
+              this.control.buttonUp(0x1, pos)
+              break
+            case 'longpress':
+              this.control.buttonUp(0x4, pos)
+              break
+          }
+          break
+      }
     }
 
     getMousePos(clientX: number, clientY: number) {
