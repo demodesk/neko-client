@@ -200,10 +200,6 @@
       this._textarea.addEventListener('gesturemove', this.onGestureHandler)
       this._textarea.addEventListener('gestureend', this.onGestureHandler)
 
-      this._textarea.addEventListener('touchstart', this.onTouchHandler, { passive: false })
-      this._textarea.addEventListener('touchmove', this.onTouchHandler, { passive: false })
-      this._textarea.addEventListener('touchend', this.onTouchHandler, { passive: false })
-
       this.webrtc.addListener('cursor-position', this.onCursorPosition)
       this.webrtc.addListener('cursor-image', this.onCursorImage)
       this.webrtc.addListener('disconnected', this.canvasClear)
@@ -225,10 +221,6 @@
       this._textarea.removeEventListener('gesturemove', this.onGestureHandler)
       this._textarea.removeEventListener('gestureend', this.onGestureHandler)
 
-      this._textarea.removeEventListener('touchstart', this.onTouchHandler)
-      this._textarea.removeEventListener('touchmove', this.onTouchHandler)
-      this._textarea.removeEventListener('touchend', this.onTouchHandler)
-
       this.webrtc.removeListener('cursor-position', this.onCursorPosition)
       this.webrtc.removeListener('cursor-image', this.onCursorImage)
       this.webrtc.removeListener('disconnected', this.canvasClear)
@@ -243,45 +235,13 @@
       }
     }
 
-    onTouchHandler(e: TouchEvent) {
-      let type = ''
-      switch (e.type) {
-        case 'touchstart':
-          type = 'mousedown'
-          break
-        case 'touchmove':
-          type = 'mousemove'
-          break
-        case 'touchend':
-          type = 'mouseup'
-          break
-        default:
-          // unknown event
-          return
-      }
-
-     /*
-     const touch = e.changedTouches[0]
-     touch.target.dispatchEvent(
-       new MouseEvent(type, {
-         button: 0, // currently only left button is supported
-         clientX: touch.clientX,
-         clientY: touch.clientY,
-       }),
-     )
-
-     e.preventDefault()
-     e.stopPropagation()
-     */
-    }
-
     // Gesture state
     private _gestureLastTapTime: any | null = null
     private _gestureFirstDoubleTapEv: any | null = null
     private _gestureLastMagnitudeX = 0
     private _gestureLastMagnitudeY = 0
 
-    _handleTapEvent(ev: any, bmask: number) {
+    _handleTapEvent(ev: any, code: number) {
       let pos = this.getMousePos(ev.detail.clientX, ev.detail.clientY)
 
       // If the user quickly taps multiple times we assume they meant to
@@ -305,36 +265,38 @@
       }
       this._gestureLastTapTime = Date.now();
 
-      this.control.buttonDown(bmask, pos)
-      this.control.buttonUp(bmask, pos)
+      this.control.buttonDown(code, pos)
+      this.control.buttonUp(code, pos)
     }
 
+    // https://github.com/novnc/noVNC/blob/ca6527c1bf7131adccfdcc5028964a1e67f9018c/core/rfb.js#L1227-L1345
     onGestureHandler(ev: any) {
-      console.log('onGestureHandler', ev.type, ev.detail.type, ev.detail.clientX, ev.detail.clientY)
-      const pos = this.getMousePos(ev.detail.clientX, ev.detail.clientY)
-      // check for NaN
-      if (pos.x !== pos.x || pos.y !== pos.y) {
-        console.log('onGestureHandler: pos is NaN')
+      // we cannot use implicitControlRequest because we don't have mouse event
+      if (!this.isControling && this.implicitControl) {
+        this.control.request()
+        return
       }
+
+      const pos = this.getMousePos(ev.detail.clientX, ev.detail.clientY)
 
       let magnitude
       switch (ev.type) {
         case 'gesturestart':
           switch (ev.detail.type) {
             case 'onetap':
-              this._handleTapEvent(ev, 0x1)
+              this._handleTapEvent(ev, 1)
               break
             case 'twotap':
-              this._handleTapEvent(ev, 0x4)
+              this._handleTapEvent(ev, 3)
               break
             case 'threetap':
-              this._handleTapEvent(ev, 0x2)
+              this._handleTapEvent(ev, 2)
               break
             case 'drag':
-              this.control.buttonDown(0x1, pos)
+              this.control.buttonDown(1, pos)
               break
             case 'longpress':
-              this.control.buttonDown(0x4, pos)
+              this.control.buttonDown(3, pos)
               break
 
             case 'twodrag':
@@ -366,23 +328,19 @@
               // every update.
               this.control.move(pos)
               while ((ev.detail.magnitudeY - this._gestureLastMagnitudeY) > GESTURE_SCRLSENS) {
-                this.control.buttonDown(0x8)
-                this.control.buttonUp(0x8)
+                this.control.scroll({x: 0, y: 1})
                 this._gestureLastMagnitudeY += GESTURE_SCRLSENS
               }
               while ((ev.detail.magnitudeY - this._gestureLastMagnitudeY) < -GESTURE_SCRLSENS) {
-                this.control.buttonDown(0x10)
-                this.control.buttonUp(0x10)
+                this.control.scroll({x: 0, y: -1})
                 this._gestureLastMagnitudeY -= GESTURE_SCRLSENS
               }
               while ((ev.detail.magnitudeX - this._gestureLastMagnitudeX) > GESTURE_SCRLSENS) {
-                this.control.buttonDown(0x20)
-                this.control.buttonUp(0x20)
+                this.control.scroll({x: 1, y: 0})
                 this._gestureLastMagnitudeX += GESTURE_SCRLSENS
               }
               while ((ev.detail.magnitudeX - this._gestureLastMagnitudeX) < -GESTURE_SCRLSENS) {
-                this.control.buttonDown(0x40)
-                this.control.buttonUp(0x40)
+                this.control.scroll({x: -1, y: 0})
                 this._gestureLastMagnitudeX -= GESTURE_SCRLSENS
               }
               break
@@ -395,17 +353,15 @@
               if (Math.abs(magnitude - this._gestureLastMagnitudeX) > GESTURE_ZOOMSENS) {
                 this.control.keyDown(KeyTable.XK_Control_L)
                 while ((magnitude - this._gestureLastMagnitudeX) > GESTURE_ZOOMSENS) {
-                  this.control.buttonDown(0x8)
-                  this.control.buttonUp(0x8)
+                  this.control.scroll({x: 0, y: 1})
                   this._gestureLastMagnitudeX += GESTURE_ZOOMSENS
                 }
                 while ((magnitude -  this._gestureLastMagnitudeX) < -GESTURE_ZOOMSENS) {
-                  this.control.buttonDown(0x10)
-                  this.control.buttonUp(0x10)
+                  this.control.scroll({x: 0, y: -1})
                   this._gestureLastMagnitudeX -= GESTURE_ZOOMSENS
                 }
+                this.control.keyUp(KeyTable.XK_Control_L)
               }
-              this.control.keyUp(KeyTable.XK_Control_L)
               break
           }
           break
@@ -419,10 +375,10 @@
             case 'twodrag':
               break
             case 'drag':
-              this.control.buttonUp(0x1, pos)
+              this.control.buttonUp(1, pos)
               break
             case 'longpress':
-              this.control.buttonUp(0x4, pos)
+              this.control.buttonUp(3, pos)
               break
           }
           break
