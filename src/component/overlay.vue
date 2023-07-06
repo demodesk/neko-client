@@ -61,10 +61,10 @@
   const WHEEL_LINE_HEIGHT = 19 // Assumed pixels for one line step
 
   // Gesture thresholds
-  const GESTURE_ZOOMSENS = 75;
-  const GESTURE_SCRLSENS = 50;
-  const DOUBLE_TAP_TIMEOUT = 1000;
-  const DOUBLE_TAP_THRESHOLD = 50;
+  const GESTURE_ZOOMSENS = 75
+  const GESTURE_SCRLSENS = 50
+  const DOUBLE_TAP_TIMEOUT = 1000
+  const DOUBLE_TAP_THRESHOLD = 50
 
   const MOUSE_MOVE_THROTTLE = 1000 / 60 // in ms, 60fps
   const INACTIVE_CURSOR_INTERVAL = 1000 / 4 // in ms, 4fps
@@ -247,23 +247,27 @@
       // If the user quickly taps multiple times we assume they meant to
       // hit the same spot, so slightly adjust coordinates
 
-      if ((this._gestureLastTapTime !== null) &&
-        ((Date.now() - this._gestureLastTapTime) < DOUBLE_TAP_TIMEOUT) &&
-        (this._gestureFirstDoubleTapEv.detail.type === ev.detail.type)) {
-        let dx = this._gestureFirstDoubleTapEv.detail.clientX - ev.detail.clientX;
-        let dy = this._gestureFirstDoubleTapEv.detail.clientY - ev.detail.clientY;
-        let distance = Math.hypot(dx, dy);
+      if (
+        this._gestureLastTapTime !== null &&
+        Date.now() - this._gestureLastTapTime < DOUBLE_TAP_TIMEOUT &&
+        this._gestureFirstDoubleTapEv.detail.type === ev.detail.type
+      ) {
+        let dx = this._gestureFirstDoubleTapEv.detail.clientX - ev.detail.clientX
+        let dy = this._gestureFirstDoubleTapEv.detail.clientY - ev.detail.clientY
+        let distance = Math.hypot(dx, dy)
 
         if (distance < DOUBLE_TAP_THRESHOLD) {
-          pos = this.getMousePos(this._gestureFirstDoubleTapEv.detail.clientX,
-            this._gestureFirstDoubleTapEv.detail.clientY);
+          pos = this.getMousePos(
+            this._gestureFirstDoubleTapEv.detail.clientX,
+            this._gestureFirstDoubleTapEv.detail.clientY,
+          )
         } else {
-          this._gestureFirstDoubleTapEv = ev;
+          this._gestureFirstDoubleTapEv = ev
         }
       } else {
-        this._gestureFirstDoubleTapEv = ev;
+        this._gestureFirstDoubleTapEv = ev
       }
-      this._gestureLastTapTime = Date.now();
+      this._gestureLastTapTime = Date.now()
 
       this.control.buttonDown(code, pos)
       this.control.buttonUp(code, pos)
@@ -305,8 +309,7 @@
               this.control.move(pos)
               break
             case 'pinch':
-              this._gestureLastMagnitudeX = Math.hypot(ev.detail.magnitudeX,
-                                  ev.detail.magnitudeY)
+              this._gestureLastMagnitudeX = Math.hypot(ev.detail.magnitudeX, ev.detail.magnitudeY)
               this.control.move(pos)
               break
           }
@@ -327,20 +330,20 @@
               // We don't know if the mouse was moved so we need to move it
               // every update.
               this.control.move(pos)
-              while ((ev.detail.magnitudeY - this._gestureLastMagnitudeY) > GESTURE_SCRLSENS) {
-                this.control.scroll({x: 0, y: 1})
+              while (ev.detail.magnitudeY - this._gestureLastMagnitudeY > GESTURE_SCRLSENS) {
+                this.control.scroll({ x: 0, y: 1 })
                 this._gestureLastMagnitudeY += GESTURE_SCRLSENS
               }
-              while ((ev.detail.magnitudeY - this._gestureLastMagnitudeY) < -GESTURE_SCRLSENS) {
-                this.control.scroll({x: 0, y: -1})
+              while (ev.detail.magnitudeY - this._gestureLastMagnitudeY < -GESTURE_SCRLSENS) {
+                this.control.scroll({ x: 0, y: -1 })
                 this._gestureLastMagnitudeY -= GESTURE_SCRLSENS
               }
-              while ((ev.detail.magnitudeX - this._gestureLastMagnitudeX) > GESTURE_SCRLSENS) {
-                this.control.scroll({x: 1, y: 0})
+              while (ev.detail.magnitudeX - this._gestureLastMagnitudeX > GESTURE_SCRLSENS) {
+                this.control.scroll({ x: 1, y: 0 })
                 this._gestureLastMagnitudeX += GESTURE_SCRLSENS
               }
-              while ((ev.detail.magnitudeX - this._gestureLastMagnitudeX) < -GESTURE_SCRLSENS) {
-                this.control.scroll({x: -1, y: 0})
+              while (ev.detail.magnitudeX - this._gestureLastMagnitudeX < -GESTURE_SCRLSENS) {
+                this.control.scroll({ x: -1, y: 0 })
                 this._gestureLastMagnitudeX -= GESTURE_SCRLSENS
               }
               break
@@ -352,12 +355,12 @@
               magnitude = Math.hypot(ev.detail.magnitudeX, ev.detail.magnitudeY)
               if (Math.abs(magnitude - this._gestureLastMagnitudeX) > GESTURE_ZOOMSENS) {
                 this.control.keyDown(KeyTable.XK_Control_L)
-                while ((magnitude - this._gestureLastMagnitudeX) > GESTURE_ZOOMSENS) {
-                  this.control.scroll({x: 0, y: 1})
+                while (magnitude - this._gestureLastMagnitudeX > GESTURE_ZOOMSENS) {
+                  this.control.scroll({ x: 0, y: 1 })
                   this._gestureLastMagnitudeX += GESTURE_ZOOMSENS
                 }
-                while ((magnitude -  this._gestureLastMagnitudeX) < -GESTURE_ZOOMSENS) {
-                  this.control.scroll({x: 0, y: -1})
+                while (magnitude - this._gestureLastMagnitudeX < -GESTURE_ZOOMSENS) {
+                  this.control.scroll({ x: 0, y: -1 })
                   this._gestureLastMagnitudeX -= GESTURE_ZOOMSENS
                 }
                 this.control.keyUp(KeyTable.XK_Control_L)
