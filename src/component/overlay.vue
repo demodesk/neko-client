@@ -276,8 +276,12 @@
     // https://github.com/novnc/noVNC/blob/ca6527c1bf7131adccfdcc5028964a1e67f9018c/core/rfb.js#L1227-L1345
     onGestureHandler(ev: any) {
       // we cannot use implicitControlRequest because we don't have mouse event
-      if (!this.isControling && this.implicitControl) {
-        this.control.request()
+      if (!this.isControling) {
+        // if implicitControl is enabled, request control
+        if (this.implicitControl) {
+          this.control.request()
+        }
+        // otherwise, ignore event
         return
       }
 
