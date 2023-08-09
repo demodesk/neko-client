@@ -196,9 +196,15 @@
       this.gestureHandler = new GestureHandlerInit()
       this.gestureHandler.attach(this._textarea)
 
-      this._textarea.addEventListener('gesturestart', this.onGestureHandler)
-      this._textarea.addEventListener('gesturemove', this.onGestureHandler)
-      this._textarea.addEventListener('gestureend', this.onGestureHandler)
+      //this._textarea.addEventListener('gesturestart', this.onGestureHandler)
+      //this._textarea.addEventListener('gesturemove', this.onGestureHandler)
+      //this._textarea.addEventListener('gestureend', this.onGestureHandler)
+
+      // bind to touch events
+      this._textarea.addEventListener('touchstart', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchmove', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchend', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchcancel', this.onTouchHandler, { passive: false })
 
       this.webrtc.addListener('cursor-position', this.onCursorPosition)
       this.webrtc.addListener('cursor-image', this.onCursorImage)
@@ -217,9 +223,14 @@
         this.gestureHandler.detach()
       }
 
-      this._textarea.removeEventListener('gesturestart', this.onGestureHandler)
-      this._textarea.removeEventListener('gesturemove', this.onGestureHandler)
-      this._textarea.removeEventListener('gestureend', this.onGestureHandler)
+      //this._textarea.removeEventListener('gesturestart', this.onGestureHandler)
+      //this._textarea.removeEventListener('gesturemove', this.onGestureHandler)
+      //this._textarea.removeEventListener('gestureend', this.onGestureHandler)
+
+      this._textarea.removeEventListener('touchstart', this.onTouchHandler)
+      this._textarea.removeEventListener('touchmove', this.onTouchHandler)
+      this._textarea.removeEventListener('touchend', this.onTouchHandler)
+      this._textarea.removeEventListener('touchcancel', this.onTouchHandler)
 
       this.webrtc.removeListener('cursor-position', this.onCursorPosition)
       this.webrtc.removeListener('cursor-image', this.onCursorImage)
@@ -271,6 +282,26 @@
 
       this.control.buttonDown(code, pos)
       this.control.buttonUp(code, pos)
+    }
+
+    onTouchHandler(ev: TouchEvent) {
+      for (let touch of ev.touches) {
+        const pos = this.getMousePos(touch.clientX, touch.clientY)
+        console.log(ev.type, { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
+
+        switch (ev.type) {
+          case 'touchstart':
+            this.webrtc.send('touch_begin', { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
+            break
+          case 'touchmove':
+            this.webrtc.send('touch_update', { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
+            break
+          case 'touchend':
+          case 'touchcancel':
+            this.webrtc.send('touch_end', { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
+            break
+        }
+      }
     }
 
     // https://github.com/novnc/noVNC/blob/ca6527c1bf7131adccfdcc5028964a1e67f9018c/core/rfb.js#L1227-L1345
