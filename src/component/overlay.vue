@@ -285,7 +285,7 @@
     }
 
     onTouchHandler(ev: TouchEvent) {
-      for (let touch of ev.touches) {
+      for (let touch of ev.changedTouches) {
         const pos = this.getMousePos(touch.clientX, touch.clientY)
         console.log(ev.type, { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
 
