@@ -285,6 +285,16 @@
     }
 
     onTouchHandler(ev: TouchEvent) {
+      // we cannot use implicitControlRequest because we don't have mouse event
+      if (!this.isControling) {
+        // if implicitControl is enabled, request control
+        if (this.implicitControl) {
+          this.control.request()
+        }
+        // otherwise, ignore event
+        return
+      }
+
       for (let touch of ev.changedTouches) {
         const pos = this.getMousePos(touch.clientX, touch.clientY)
         console.log(ev.type, { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
