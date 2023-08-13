@@ -366,7 +366,7 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
   public send(event: 'mousedown' | 'mouseup' | 'keydown' | 'keyup', data: { key: number }): void
   public send(event: 'ping', data: number): void
   public send(
-    event: 'touch_begin' | 'touch_update' | 'touch_end',
+    event: 'touchbegin' | 'touchupdate' | 'touchend',
     data: { touchId: number; x: number; y: number; pressure: number },
   ): void
   public send(event: string, data: any): void {
@@ -430,16 +430,16 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
         payload.setUint32(3, Math.trunc(data / maxUint32))
         payload.setUint32(7, data % maxUint32)
         break
-      case 'touch_begin':
-      case 'touch_update':
-      case 'touch_end':
+      case 'touchbegin':
+      case 'touchupdate':
+      case 'touchend':
         buffer = new ArrayBuffer(17)
         payload = new DataView(buffer)
-        if (event === 'touch_begin') {
+        if (event === 'touchbegin') {
           payload.setUint8(0, OPCODE.TOUCH_BEGIN)
-        } else if (event === 'touch_update') {
+        } else if (event === 'touchupdate') {
           payload.setUint8(0, OPCODE.TOUCH_UPDATE)
-        } else if (event === 'touch_end') {
+        } else if (event === 'touchend') {
           payload.setUint8(0, OPCODE.TOUCH_END)
         }
         payload.setUint16(1, 12)

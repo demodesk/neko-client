@@ -297,18 +297,17 @@
 
       for (let touch of ev.changedTouches) {
         const pos = this.getMousePos(touch.clientX, touch.clientY)
-        console.log(ev.type, { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
 
         switch (ev.type) {
           case 'touchstart':
-            this.webrtc.send('touch_begin', { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
+            this.control.touchBegin(touch.identifier, pos, touch.force)
             break
           case 'touchmove':
-            this.webrtc.send('touch_update', { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
+            this.control.touchUpdate(touch.identifier, pos, touch.force)
             break
           case 'touchend':
           case 'touchcancel':
-            this.webrtc.send('touch_end', { x: pos.x, y: pos.y, touchId: touch.identifier, pressure: touch.force })
+            this.control.touchEnd(touch.identifier, pos, touch.force)
             break
         }
       }

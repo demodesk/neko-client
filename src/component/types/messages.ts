@@ -125,6 +125,11 @@ export interface ControlKey extends Partial<ControlPos> {
   keysym: number
 }
 
+export interface ControlTouch extends Partial<ControlPos> {
+  touchId: number
+  pressure: number
+}
+
 /////////////////////////////
 // Screen
 /////////////////////////////

@@ -112,6 +112,30 @@ export class NekoControl extends EventEmitter<NekoControlEvents> {
     }
   }
 
+  public touchBegin(touchId: number, pos: ControlPos, pressure: number) {
+    if (this.useWebrtc) {
+      this._connection.webrtc.send('touchbegin', { touchId, ...pos, pressure })
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_TOUCHBEGIN, { touchId, ...pos, pressure } as message.ControlTouch)
+    }
+  }
+
+  public touchUpdate(touchId: number, pos: ControlPos, pressure: number) {
+    if (this.useWebrtc) {
+      this._connection.webrtc.send('touchupdate', { touchId, ...pos, pressure })
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_TOUCHUPDATE, { touchId, ...pos, pressure } as message.ControlTouch)
+    }
+  }
+
+  public touchEnd(touchId: number, pos: ControlPos, pressure: number) {
+    if (this.useWebrtc) {
+      this._connection.webrtc.send('touchend', { touchId, ...pos, pressure })
+    } else {
+      this._connection.websocket.send(EVENT.CONTROL_TOUCHEND, { touchId, ...pos, pressure } as message.ControlTouch)
+    }
+  }
+
   public cut() {
     this._connection.websocket.send(EVENT.CONTROL_CUT)
   }
