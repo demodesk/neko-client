@@ -295,7 +295,7 @@
         return
       }
 
-      for (let touch of ev.changedTouches) {
+      for (let touch of Array.from(ev.changedTouches)) {
         const pos = this.getMousePos(touch.clientX, touch.clientY)
 
         switch (ev.type) {
