@@ -295,19 +295,23 @@
         return
       }
 
-      for (let touch of Array.from(ev.changedTouches)) {
+      for (let i = 0; i < ev.changedTouches.length; i++) {
+        const touch = ev.changedTouches[i]
         const pos = this.getMousePos(touch.clientX, touch.clientY)
+        // force is float value between 0 and 1
+        // pressure is integer value between 0 and 255
+        const pressure = Math.round(touch.force * 255)
 
         switch (ev.type) {
           case 'touchstart':
-            this.control.touchBegin(touch.identifier, pos, touch.force)
+            this.control.touchBegin(touch.identifier, pos, pressure)
             break
           case 'touchmove':
-            this.control.touchUpdate(touch.identifier, pos, touch.force)
+            this.control.touchUpdate(touch.identifier, pos, pressure)
             break
           case 'touchend':
           case 'touchcancel':
-            this.control.touchEnd(touch.identifier, pos, touch.force)
+            this.control.touchEnd(touch.identifier, pos, pressure)
             break
         }
       }
