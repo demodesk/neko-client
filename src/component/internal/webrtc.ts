@@ -433,7 +433,7 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
       case 'touchbegin':
       case 'touchupdate':
       case 'touchend':
-        buffer = new ArrayBuffer(17)
+        buffer = new ArrayBuffer(16)
         payload = new DataView(buffer)
         if (event === 'touchbegin') {
           payload.setUint8(0, OPCODE.TOUCH_BEGIN)
@@ -442,11 +442,11 @@ export class NekoWebRTC extends EventEmitter<NekoWebRTCEvents> {
         } else if (event === 'touchend') {
           payload.setUint8(0, OPCODE.TOUCH_END)
         }
-        payload.setUint16(1, 12)
+        payload.setUint16(1, 13)
         payload.setUint32(3, data.touchId)
         payload.setInt32(7, data.x)
         payload.setInt32(11, data.y)
-        payload.setUint16(15, data.pressure)
+        payload.setUint8(15, data.pressure)
         break
       default:
         this._log.warn(`unknown data event`, { event })
