@@ -306,6 +306,9 @@
         return
       }
 
+      ev.stopPropagation()
+      ev.preventDefault()
+
       for (let i = 0; i < ev.changedTouches.length; i++) {
         const touch = ev.changedTouches[i]
         const pos = this.getMousePos(touch.clientX, touch.clientY)

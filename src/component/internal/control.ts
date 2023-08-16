@@ -34,8 +34,7 @@ export class NekoControl extends EventEmitter<NekoControlEvents> {
   }
 
   get hasTouchEvents() {
-    // TODO: from backend state, if touch support is enabled
-    return true
+    return this._state.touch_events
   }
 
   public lock() {
