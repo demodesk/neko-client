@@ -215,10 +215,6 @@
         this.keyboard.removeListener()
       }
 
-      if (this.gestureHandler) {
-        this.gestureHandler.detach()
-      }
-
       // unbind touch handler
       this.unbindTouchHandler()
 
