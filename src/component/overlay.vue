@@ -80,7 +80,7 @@
     private canvasScale = window.devicePixelRatio
 
     private keyboard!: KeyboardInterface
-    private gestureHandler: GestureHandler | null = null
+    private gestureHandler!: GestureHandler
     private textInput = ''
 
     private focused = false
@@ -192,23 +192,15 @@
       }
       this.keyboard.listenTo(this._textarea)
 
-      // if we do not have touch events, we need to use gesture handler
-      // to simulate mouse events from touch events
-      if (!this.control.hasTouchEvents) {
-        // Initialize GestureHandler
-        this.gestureHandler = new GestureHandlerInit()
-        this.gestureHandler.attach(this._textarea)
+      // Initialize GestureHandler
+      this.gestureHandler = new GestureHandlerInit()
 
-        this._textarea.addEventListener('gesturestart', this.onGestureHandler)
-        this._textarea.addEventListener('gesturemove', this.onGestureHandler)
-        this._textarea.addEventListener('gestureend', this.onGestureHandler)
-      } else {
-        // bind directly to touch events
-        this._textarea.addEventListener('touchstart', this.onTouchHandler, { passive: false })
-        this._textarea.addEventListener('touchmove', this.onTouchHandler, { passive: false })
-        this._textarea.addEventListener('touchend', this.onTouchHandler, { passive: false })
-        this._textarea.addEventListener('touchcancel', this.onTouchHandler, { passive: false })
-      }
+      // bind touch handler using @Watch on hasTouchEvents
+      // because we need to know if touch events are supported
+      // by the server before we can bind touch handler
+
+      // default value is false, so we can bind touch handler
+      this.bindGestureHandler()
 
       this.webrtc.addListener('cursor-position', this.onCursorPosition)
       this.webrtc.addListener('cursor-image', this.onCursorImage)
@@ -225,18 +217,13 @@
 
       if (this.gestureHandler) {
         this.gestureHandler.detach()
-
-        this._textarea.removeEventListener('gesturestart', this.onGestureHandler)
-        this._textarea.removeEventListener('gesturemove', this.onGestureHandler)
-        this._textarea.removeEventListener('gestureend', this.onGestureHandler)
       }
 
-      if (this.control.hasTouchEvents) {
-        this._textarea.removeEventListener('touchstart', this.onTouchHandler)
-        this._textarea.removeEventListener('touchmove', this.onTouchHandler)
-        this._textarea.removeEventListener('touchend', this.onTouchHandler)
-        this._textarea.removeEventListener('touchcancel', this.onTouchHandler)
-      }
+      // unbind touch handler
+      this.unbindTouchHandler()
+
+      // unbind gesture handler
+      this.unbindGestureHandler()
 
       this.webrtc.removeListener('cursor-position', this.onCursorPosition)
       this.webrtc.removeListener('cursor-image', this.onCursorImage)
@@ -252,48 +239,23 @@
       }
     }
 
-    // Gesture state
-    private _gestureLastTapTime: any | null = null
-    private _gestureFirstDoubleTapEv: any | null = null
-    private _gestureLastMagnitudeX = 0
-    private _gestureLastMagnitudeY = 0
+    //
+    // touch handler for native touch events
+    //
 
-    _handleTapEvent(ev: any, code: number) {
-      let pos = this.getMousePos(ev.detail.clientX, ev.detail.clientY)
-
-      // If the user quickly taps multiple times we assume they meant to
-      // hit the same spot, so slightly adjust coordinates
-
-      if (
-        this._gestureLastTapTime !== null &&
-        Date.now() - this._gestureLastTapTime < DOUBLE_TAP_TIMEOUT &&
-        this._gestureFirstDoubleTapEv.detail.type === ev.detail.type
-      ) {
-        let dx = this._gestureFirstDoubleTapEv.detail.clientX - ev.detail.clientX
-        let dy = this._gestureFirstDoubleTapEv.detail.clientY - ev.detail.clientY
-        let distance = Math.hypot(dx, dy)
-
-        if (distance < DOUBLE_TAP_THRESHOLD) {
-          pos = this.getMousePos(
-            this._gestureFirstDoubleTapEv.detail.clientX,
-            this._gestureFirstDoubleTapEv.detail.clientY,
-          )
-        } else {
-          this._gestureFirstDoubleTapEv = ev
-        }
-      } else {
-        this._gestureFirstDoubleTapEv = ev
-      }
-      this._gestureLastTapTime = Date.now()
-
-      this.control.buttonDown(code, pos)
-      this.control.buttonUp(code, pos)
+    bindTouchHandler() {
+      this._textarea.addEventListener('touchstart', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchmove', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchend', this.onTouchHandler, { passive: false })
+      this._textarea.addEventListener('touchcancel', this.onTouchHandler, { passive: false })
     }
 
-    //
-    // touch and gesture handlers cannot be used together
-    // because gesture handler emulates mouse events
-    //
+    unbindTouchHandler() {
+      this._textarea.removeEventListener('touchstart', this.onTouchHandler)
+      this._textarea.removeEventListener('touchmove', this.onTouchHandler)
+      this._textarea.removeEventListener('touchend', this.onTouchHandler)
+      this._textarea.removeEventListener('touchcancel', this.onTouchHandler)
+    }
 
     onTouchHandler(ev: TouchEvent) {
       // we cannot use implicitControlRequest because we don't have mouse event
@@ -329,6 +291,61 @@
             break
         }
       }
+    }
+
+    //
+    // gesture handler for emulated mouse events
+    //
+
+    bindGestureHandler() {
+      this.gestureHandler.attach(this._textarea)
+      this._textarea.addEventListener('gesturestart', this.onGestureHandler)
+      this._textarea.addEventListener('gesturemove', this.onGestureHandler)
+      this._textarea.addEventListener('gestureend', this.onGestureHandler)
+    }
+
+    unbindGestureHandler() {
+      this.gestureHandler.detach()
+      this._textarea.removeEventListener('gesturestart', this.onGestureHandler)
+      this._textarea.removeEventListener('gesturemove', this.onGestureHandler)
+      this._textarea.removeEventListener('gestureend', this.onGestureHandler)
+    }
+
+    private _gestureLastTapTime: any | null = null
+    private _gestureFirstDoubleTapEv: any | null = null
+    private _gestureLastMagnitudeX = 0
+    private _gestureLastMagnitudeY = 0
+
+    _handleTapEvent(ev: any, code: number) {
+      let pos = this.getMousePos(ev.detail.clientX, ev.detail.clientY)
+
+      // If the user quickly taps multiple times we assume they meant to
+      // hit the same spot, so slightly adjust coordinates
+
+      if (
+        this._gestureLastTapTime !== null &&
+        Date.now() - this._gestureLastTapTime < DOUBLE_TAP_TIMEOUT &&
+        this._gestureFirstDoubleTapEv.detail.type === ev.detail.type
+      ) {
+        let dx = this._gestureFirstDoubleTapEv.detail.clientX - ev.detail.clientX
+        let dy = this._gestureFirstDoubleTapEv.detail.clientY - ev.detail.clientY
+        let distance = Math.hypot(dx, dy)
+
+        if (distance < DOUBLE_TAP_THRESHOLD) {
+          pos = this.getMousePos(
+            this._gestureFirstDoubleTapEv.detail.clientX,
+            this._gestureFirstDoubleTapEv.detail.clientY,
+          )
+        } else {
+          this._gestureFirstDoubleTapEv = ev
+        }
+      } else {
+        this._gestureFirstDoubleTapEv = ev
+      }
+      this._gestureLastTapTime = Date.now()
+
+      this.control.buttonDown(code, pos)
+      this.control.buttonUp(code, pos)
     }
 
     // https://github.com/novnc/noVNC/blob/ca6527c1bf7131adccfdcc5028964a1e67f9018c/core/rfb.js#L1227-L1345
@@ -447,6 +464,21 @@
               break
           }
           break
+      }
+    }
+
+    //
+    // touch and gesture handlers cannot be used together
+    //
+
+    @Watch('control.hasTouchEvents')
+    onTouchEventsChange() {
+      if (this.control.hasTouchEvents) {
+        this.unbindGestureHandler()
+        this.bindTouchHandler()
+      } else {
+        this.unbindTouchHandler()
+        this.bindGestureHandler()
       }
     }
 
