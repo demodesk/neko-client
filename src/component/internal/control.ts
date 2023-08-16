@@ -33,6 +33,11 @@ export class NekoControl extends EventEmitter<NekoControlEvents> {
     return this._connection.webrtc.connected && this._state.is_host
   }
 
+  get hasTouchEvents() {
+    // TODO: from backend state, if touch support is enabled
+    return true
+  }
+
   public lock() {
     Vue.set(this._state, 'locked', true)
   }
