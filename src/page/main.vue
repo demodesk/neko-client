@@ -335,7 +335,7 @@
     })
   })(require.context('./plugins/', true, /(main-tabs|main-components)\.vue$/))
 
-  import { Vue, Component, Ref, Watch } from 'vue-property-decorator'
+  import { Vue, Component, Ref } from 'vue-property-decorator'
   import NekoCanvas from '~/component/main.vue'
   import NekoHeader from './components/header.vue'
   import NekoConnect from './components/connect.vue'
@@ -473,6 +473,7 @@
       })
       this.neko.events.on('upload.dialog.overlay', (id: string) => {
         this.dialogOverlayActive = true
+        console.log('upload.dialog.overlay', id)
       })
       this.neko.events.on('upload.dialog.closed', () => {
         this.dialogOverlayActive = false

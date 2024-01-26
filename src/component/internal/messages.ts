@@ -340,7 +340,7 @@ export class NekoMessages extends EventEmitter<NekoEvents> {
     }
   }
 
-  protected [EVENT.FILE_CHOOSER_DIALOG_CLOSED]({ id }: message.SessionID) {
+  protected [EVENT.FILE_CHOOSER_DIALOG_CLOSED]({}: message.SessionID) {
     this._localLog.debug(`EVENT.FILE_CHOOSER_DIALOG_CLOSED`)
     this.emit('upload.dialog.closed')
   }
