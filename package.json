@@ -16,7 +16,7 @@
     "build:page": "vue-cli-service build"
   },
   "dependencies": {
-    "axios": "^0.27.2",
+    "axios": "^1.6.7",
     "eventemitter3": "^5.0.0",
     "resize-observer-polyfill": "^1.5.1",
     "vue": "^2.7.16",
